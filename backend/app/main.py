@@ -76,7 +76,14 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_ORIGIN, "http://localhost:3000", "https://yangi18.vercel.app"],
+    allow_origins=[
+        FRONTEND_ORIGIN,
+        "http://localhost:3000",
+        "https://biznesxabar.uz",
+        "https://www.biznesxabar.uz",
+    ],
+    # Har qanday Vercel deploy (production + preview) domenini qabul qiladi
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_methods=["*"],
     allow_headers=["*"],
 )
