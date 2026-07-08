@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="g" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#f59e0b"/>
+      <stop offset="1" stop-color="#fbbf24"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#0f172a"/>
+  <rect x="3" y="3" width="58" height="58" rx="12" fill="none" stroke="url(#g)" stroke-width="2.5"/>
+  <!-- O'sish grafigi (bar chart) -->
+  <rect x="15" y="32" width="7" height="14" rx="1.5" fill="url(#g)" opacity="0.85"/>
+  <rect x="26" y="24" width="7" height="22" rx="1.5" fill="url(#g)" opacity="0.92"/>
+  <rect x="37" y="16" width="7" height="30" rx="1.5" fill="url(#g)"/>
+  <!-- Yuqoriga yo'nalgan strelka -->
+  <polyline points="15,29 26,20 37,12 47,7" fill="none" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <polygon points="47,7 41,8.5 45.5,12.5" fill="#fde68a"/>
+  <text x="32" y="57" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#94a3b8">XABAR</text>
+</svg>
