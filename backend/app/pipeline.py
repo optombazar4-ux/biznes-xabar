@@ -10,7 +10,6 @@ Muntazam ishlashi uchun cron'ga qo'ying, masalan har soatda:
   0 * * * * cd /path/backend && .venv/bin/python -m app.pipeline
 """
 
-import random
 from datetime import datetime, timedelta
 
 from .config import (
@@ -26,7 +25,7 @@ from .models import Article, Category
 from .seed import seed_categories
 from .services.ai_agent import analyze_news
 from .services.collector import collect_news, fetch_og_image
-from .services.education import LESSON_TOPICS, generate_lesson
+from .services.education import collect_lesson_entries, translate_lesson
 from .services.image_gen import generate_image
 from .services.telegram import send_to_channel
 from .utils import slugify
@@ -38,8 +37,9 @@ LESSON_MIN_INTERVAL_HOURS = 20
 def maybe_generate_lesson(db, categories) -> bool:
     """Kerak bo'lsa bitta yangi biznes darsi maqolasini yaratadi.
 
-    Darslar RSS'dan emas, kurator mavzular ro'yxatidan generatsiya qilinadi.
-    ~1 dars/kun tezligida, mavzular takrorlanmasdan.
+    Darslar chet el biznes-ta'lim RSS manbalaridan olinadi (education.py)
+    va AI orqali o'zbek tiliga moslashtirib tarjima qilinadi. ~1 dars/kun
+    tezligida.
     """
     lesson_cat = categories.get("biznes-darslari")
     if not lesson_cat:
@@ -55,21 +55,21 @@ def maybe_generate_lesson(db, categories) -> bool:
     if last and last.created_at > datetime.utcnow() - timedelta(hours=LESSON_MIN_INTERVAL_HOURS):
         return False
 
-    # Hali yozilmagan mavzuni tanlash (original_title = mavzu deb saqlaymiz)
-    used = {
-        t for (t,) in db.query(Article.original_title)
-        .filter(Article.category_id == lesson_cat.id).all()
-    }
-    remaining = [t for t in LESSON_TOPICS if t not in used]
-    if not remaining:
-        return False  # barcha mavzular yoritilgan
+    entries = collect_lesson_entries(db, per_feed=3)
+    if not entries:
+        return False
+    entry = entries[0]
 
-    topic = random.choice(remaining)
-    print(f"🎓 Biznes darsi yaratilmoqda: {topic[:60]}")
+    print(f"🎓 Biznes darsi tarjima qilinmoqda: {entry['title'][:60]}")
     try:
-        lesson = generate_lesson(topic)
+        lesson = translate_lesson(
+            title=entry["title"],
+            content=entry["content"],
+            url=entry["url"],
+            source=entry["source"],
+        )
     except Exception as error:
-        print(f"   ✗ Dars yaratish xatosi: {error}")
+        print(f"   ✗ Dars tarjimasi xatosi: {error}")
         return False
 
     slug = slugify(lesson["sarlavha"])
@@ -85,10 +85,10 @@ def maybe_generate_lesson(db, categories) -> bool:
         practical_note=lesson["amaliy_ahamiyat"],
         tags=lesson["teglar"],
         importance=lesson["ahamiyati"],
-        original_title=topic,
-        original_url=f"internal://dars/{slug}",
-        source_name="Biznes Xabar",
-        image_url=None,
+        original_title=entry["title"],
+        original_url=entry["url"],
+        source_name=entry["source"],
+        image_url=entry["image"] or fetch_og_image(entry["url"]),
         category_id=lesson_cat.id,
         status="published" if AUTO_PUBLISH else "pending",
         published_at=datetime.utcnow() if AUTO_PUBLISH else None,
