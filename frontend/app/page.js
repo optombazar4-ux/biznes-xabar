@@ -4,11 +4,12 @@ import AdPlaceholder from "../components/AdPlaceholder";
 import { apiGet } from "../lib/api";
 
 export default async function HomePage() {
-  const [latest, top, digest, trends] = await Promise.all([
+  const [latest, top, digest, trends, lessons] = await Promise.all([
     apiGet("/api/news", { limit: 12 }),
     apiGet("/api/news/top", { limit: 10, kunlar: 1 }),
     apiGet("/api/news/digest"),
     apiGet("/api/news/trends"),
+    apiGet("/api/news/lessons", { limit: 4 }),
   ]);
 
   const hasContent = (latest || []).length > 0;
@@ -30,6 +31,25 @@ export default async function HomePage() {
             Backend&apos;da <code className="rounded bg-slate-800 px-2 py-0.5">python -m app.pipeline</code>{" "}
             buyrug&apos;ini ishga tushiring va admin panelda tasdiqlang.
           </div>
+        )}
+
+        {(lessons || []).length > 0 && (
+          <section className="mt-10">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold">🎓 Biznes darslari</h2>
+              <Link
+                href="/kategoriya/biznes-darslari"
+                className="text-sm text-amber-400 hover:underline"
+              >
+                Barchasi →
+              </Link>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2">
+              {lessons.map((article) => (
+                <ArticleCard key={article.id} article={article} />
+              ))}
+            </div>
+          </section>
         )}
 
         {(digest || []).length > 0 && (

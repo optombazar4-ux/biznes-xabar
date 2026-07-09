@@ -13,9 +13,30 @@ from ..schemas import ArticleOut
 
 router = APIRouter(prefix="/api/news", tags=["news"])
 
+# Biznes darslari — evergreen ta'lim kontenti. Vaqtga asoslangan yangilik
+# lentalarida (eng so'nggi, kunlik top, bugungi dayjest) ko'rsatilmaydi;
+# o'z kategoriya sahifasi va /lessons endpointi orqali chiqadi.
+LESSON_SLUG = "biznes-darslari"
+
 
 def published(db: Session):
     return db.query(Article).filter(Article.status == "published")
+
+
+def _lesson_category_id(db: Session):
+    row = db.query(Category.id).filter(Category.slug == LESSON_SLUG).first()
+    return row[0] if row else None
+
+
+def published_news(db: Session):
+    """Faqat yangiliklar — biznes darslari (evergreen) chiqarib tashlanadi."""
+    query = published(db)
+    lesson_id = _lesson_category_id(db)
+    if lesson_id is not None:
+        query = query.filter(
+            or_(Article.category_id != lesson_id, Article.category_id.is_(None))
+        )
+    return query
 
 
 @router.get("", response_model=list[ArticleOut])
@@ -25,12 +46,31 @@ def latest_news(
     limit: int = Query(default=20, le=100),
     offset: int = 0,
 ):
-    """Eng so'nggi yangiliklar (ixtiyoriy kategoriya filtri bilan)."""
-    query = published(db)
+    """Eng so'nggi yangiliklar (ixtiyoriy kategoriya filtri bilan).
+
+    Kategoriya berilmasa, biznes darslari lentaga aralashmaydi; aniq
+    kategoriya (jumladan biznes-darslari) so'ralsa, o'sha kategoriya chiqadi.
+    """
     if kategoriya:
-        query = query.join(Category).filter(Category.slug == kategoriya)
+        query = published(db).join(Category).filter(Category.slug == kategoriya)
+    else:
+        query = published_news(db)
     return (
         query.order_by(Article.published_at.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+
+@router.get("/lessons", response_model=list[ArticleOut])
+def business_lessons(db: Session = Depends(get_db), limit: int = Query(default=12, le=100), offset: int = 0):
+    """Biznes darslari — evergreen ta'lim maqolalari (eng yangi birinchi)."""
+    return (
+        published(db)
+        .join(Category)
+        .filter(Category.slug == LESSON_SLUG)
+        .order_by(Article.published_at.desc())
         .offset(offset)
         .limit(limit)
         .all()
@@ -42,7 +82,7 @@ def top_news(db: Session = Depends(get_db), kunlar: int = 1, limit: int = Query(
     """Top yangiliklar — muhimlik bahosi bo'yicha (standart: bugungi kun)."""
     since = datetime.utcnow() - timedelta(days=kunlar)
     return (
-        published(db)
+        published_news(db)
         .filter(Article.published_at >= since)
         .order_by(Article.importance.desc(), Article.published_at.desc())
         .limit(limit)
@@ -55,7 +95,7 @@ def daily_digest(db: Session = Depends(get_db)):
     """Bugungi biznes dayjesti — bugun chop etilgan barcha yangiliklar."""
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     return (
-        published(db)
+        published_news(db)
         .filter(Article.published_at >= today)
         .order_by(Article.importance.desc())
         .all()
@@ -66,7 +106,7 @@ def daily_digest(db: Session = Depends(get_db)):
 def trend_topics(db: Session = Depends(get_db), kunlar: int = 7, limit: int = 15):
     """Trend mavzular — so'nggi kunlardagi eng ko'p uchragan teglar."""
     since = datetime.utcnow() - timedelta(days=kunlar)
-    articles = published(db).filter(Article.published_at >= since).all()
+    articles = published_news(db).filter(Article.published_at >= since).all()
     counter = Counter(tag for a in articles for tag in (a.tags or []))
     return [{"teg": tag, "soni": count} for tag, count in counter.most_common(limit)]
 
