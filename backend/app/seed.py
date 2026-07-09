@@ -4,6 +4,7 @@ from .models import Category
 
 # Biznes yo'nalishlari bo'yicha kategoriyalar
 CATEGORIES = [
+    ("Biznes darslari", "biznes-darslari"),
     ("Startaplar", "startaplar"),
     ("Investitsiyalar", "investitsiyalar"),
     ("Moliya va bozorlar", "moliya"),

@@ -10,7 +10,8 @@ Muntazam ishlashi uchun cron'ga qo'ying, masalan har soatda:
   0 * * * * cd /path/backend && .venv/bin/python -m app.pipeline
 """
 
-from datetime import datetime
+import random
+from datetime import datetime, timedelta
 
 from .config import (
     AUTO_PUBLISH,
@@ -25,9 +26,77 @@ from .models import Article, Category
 from .seed import seed_categories
 from .services.ai_agent import analyze_news
 from .services.collector import collect_news, fetch_og_image
+from .services.education import LESSON_TOPICS, generate_lesson
 from .services.image_gen import generate_image
 from .services.telegram import send_to_channel
 from .utils import slugify
+
+# Biznes darsi kamida shuncha soatda bir marta yaratiladi (~1 dars/kun)
+LESSON_MIN_INTERVAL_HOURS = 20
+
+
+def maybe_generate_lesson(db, categories) -> bool:
+    """Kerak bo'lsa bitta yangi biznes darsi maqolasini yaratadi.
+
+    Darslar RSS'dan emas, kurator mavzular ro'yxatidan generatsiya qilinadi.
+    ~1 dars/kun tezligida, mavzular takrorlanmasdan.
+    """
+    lesson_cat = categories.get("biznes-darslari")
+    if not lesson_cat:
+        return False
+
+    # Sur'atni tekshirish: oxirgi dars yaqinda yaratilgan bo'lsa, o'tkazib yuboramiz
+    last = (
+        db.query(Article)
+        .filter(Article.category_id == lesson_cat.id)
+        .order_by(Article.created_at.desc())
+        .first()
+    )
+    if last and last.created_at > datetime.utcnow() - timedelta(hours=LESSON_MIN_INTERVAL_HOURS):
+        return False
+
+    # Hali yozilmagan mavzuni tanlash (original_title = mavzu deb saqlaymiz)
+    used = {
+        t for (t,) in db.query(Article.original_title)
+        .filter(Article.category_id == lesson_cat.id).all()
+    }
+    remaining = [t for t in LESSON_TOPICS if t not in used]
+    if not remaining:
+        return False  # barcha mavzular yoritilgan
+
+    topic = random.choice(remaining)
+    print(f"🎓 Biznes darsi yaratilmoqda: {topic[:60]}")
+    try:
+        lesson = generate_lesson(topic)
+    except Exception as error:
+        print(f"   ✗ Dars yaratish xatosi: {error}")
+        return False
+
+    slug = slugify(lesson["sarlavha"])
+    if db.query(Article).filter(Article.slug == slug).first():
+        slug = f"{slug}-dars"
+
+    article = Article(
+        title=lesson["sarlavha"],
+        seo_title=lesson["seo_sarlavha"],
+        slug=slug,
+        summary=lesson["xulosa"],
+        content=lesson["maqola"],
+        practical_note=lesson["amaliy_ahamiyat"],
+        tags=lesson["teglar"],
+        importance=lesson["ahamiyati"],
+        original_title=topic,
+        original_url=f"internal://dars/{slug}",
+        source_name="Biznes Xabar",
+        image_url=None,
+        category_id=lesson_cat.id,
+        status="published" if AUTO_PUBLISH else "pending",
+        published_at=datetime.utcnow() if AUTO_PUBLISH else None,
+    )
+    db.add(article)
+    db.commit()
+    print("   ✓ Biznes darsi saytga chiqarildi")
+    return True
 
 
 def run_pipeline(per_feed: int = 5) -> int:
@@ -107,6 +176,10 @@ def run_pipeline(per_feed: int = 5) -> int:
                     print("   ✓ Telegram kanalga yuborildi")
                 except Exception as error:
                     print(f"   ✗ Telegram xatosi: {error}")
+
+        # Yangiliklardan tashqari — muntazam biznes darsi (evergreen ta'lim kontenti)
+        if maybe_generate_lesson(db, categories):
+            saved += 1
 
         mode = "saytga chiqarildi (avto)" if AUTO_PUBLISH else "pending — admin tasdig'ini kutmoqda"
         print(f"\n✅ {saved} ta maqola saqlandi ({mode}).")

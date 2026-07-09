@@ -1,5 +1,6 @@
 import Link from "next/link";
 import AdPlaceholder from "../../../components/AdPlaceholder";
+import MarkdownContent from "../../../components/MarkdownContent";
 import { apiGet } from "../../../lib/api";
 import { SITE_URL, SITE_NAME } from "../../../lib/site";
 
@@ -113,10 +114,8 @@ export default async function ArticlePage({ params }) {
         {article.summary}
       </p>
 
-      <div className="prose-invert mb-6 space-y-4 leading-relaxed text-slate-300">
-        {article.content.split(/\n\s*\n/).map((paragraph, i) => (
-          <p key={i}>{paragraph}</p>
-        ))}
+      <div className="prose-invert mb-6">
+        <MarkdownContent content={article.content} />
       </div>
 
       {article.practical_note && (
