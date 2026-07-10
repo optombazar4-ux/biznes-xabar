@@ -3,6 +3,8 @@ import { readingMinutes, levelForCategory, formatDate } from "../lib/lesson";
 
 export default function ArticleCard({ article, compact = false }) {
   const category = article.category?.name || "Biznes darsi";
+  const catSlug = article.category?.slug || "biznesni-boshlash";
+  const href = `/${catSlug}/${article.slug}`;
   const level = levelForCategory(article.category?.slug);
   const minutes = readingMinutes(article.content);
   const date = formatDate(article.published_at);
@@ -10,7 +12,7 @@ export default function ArticleCard({ article, compact = false }) {
   if (compact) {
     return (
       <Link
-        href={`/maqola/${article.slug}`}
+        href={href}
         className="block rounded-lg border border-slate-800 p-3 hover:border-amber-600"
       >
         <div className="mb-1 text-xs text-slate-400">{category}</div>
@@ -36,7 +38,7 @@ export default function ArticleCard({ article, compact = false }) {
           </span>
           <span className="text-slate-500">{level}</span>
         </div>
-        <Link href={`/maqola/${article.slug}`}>
+        <Link href={href}>
           <h2 className="mb-2 text-lg font-semibold leading-snug hover:text-amber-400">
             {article.title}
           </h2>
@@ -46,7 +48,7 @@ export default function ArticleCard({ article, compact = false }) {
         </p>
         <div className="mt-auto flex items-center justify-between text-xs text-slate-500">
           <span>⏱ {minutes} daqiqa{date ? ` · ${date}` : ""}</span>
-          <Link href={`/maqola/${article.slug}`} className="font-medium text-amber-400 hover:underline">
+          <Link href={href} className="font-medium text-amber-400 hover:underline">
             O&apos;qish →
           </Link>
         </div>

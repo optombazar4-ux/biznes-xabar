@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { getReadSlugs } from "../lib/progress";
 
 // Bo'lim (kurs) darslarini ketma-ketlikda, progress va o'qilgan belgilari bilan ko'rsatadi.
-export default function CourseList({ lessons }) {
+export default function CourseList({ lessons, categorySlug }) {
   const [readSlugs, setReadSlugs] = useState([]);
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export default function CourseList({ lessons }) {
           return (
             <li key={lesson.slug}>
               <Link
-                href={`/maqola/${lesson.slug}`}
+                href={`/${categorySlug}/${lesson.slug}`}
                 className={`flex items-start gap-3 rounded-xl border p-4 transition ${
                   isNext
                     ? "border-amber-500 bg-amber-500/5"

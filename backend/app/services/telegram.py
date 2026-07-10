@@ -19,10 +19,11 @@ def format_post(article: Article) -> str:
 
 
 def build_reply_markup(article: Article) -> dict:
-    """Darsni saytda to'liq o'qish uchun tugma."""
+    """Darsni saytda to'liq o'qish uchun tugma (toza URL: /{bo'lim}/{slug})."""
+    cat_slug = article.category.slug if article.category else "biznesni-boshlash"
     return {
         "inline_keyboard": [
-            [{"text": "📖 Darsni to'liq o'qish", "url": f"{FRONTEND_ORIGIN}/maqola/{article.slug}"}],
+            [{"text": "📖 Darsni to'liq o'qish", "url": f"{FRONTEND_ORIGIN}/{cat_slug}/{article.slug}"}],
         ]
     }
 

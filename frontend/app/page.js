@@ -40,7 +40,7 @@ export default async function HomePage() {
           moliya, marketing, sotuv, boshqaruv va onlayn biznes bo&apos;yicha.
         </p>
         <Link
-          href="/kategoriya/biznesni-boshlash"
+          href="/biznesni-boshlash"
           className="mt-6 inline-block rounded-xl bg-amber-500 px-6 py-3 font-bold text-slate-950 transition hover:bg-amber-400"
         >
           🎓 Bepul o&apos;rganishni boshlash
@@ -54,7 +54,7 @@ export default async function HomePage() {
           {USER_GOALS.map((goal) => (
             <Link
               key={goal.slug}
-              href={`/kategoriya/${goal.slug}`}
+              href={`/${goal.slug}`}
               className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm font-medium transition hover:border-amber-500 hover:bg-slate-900"
             >
               <span className="text-2xl">{goal.emoji}</span>
@@ -74,7 +74,7 @@ export default async function HomePage() {
                 {categories.map((cat) => (
                   <Link
                     key={cat.slug}
-                    href={`/kategoriya/${cat.slug}`}
+                    href={`/${cat.slug}`}
                     className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4 transition hover:border-amber-600"
                   >
                     <span className="text-3xl">{SECTION_ICONS[cat.slug] || "📘"}</span>

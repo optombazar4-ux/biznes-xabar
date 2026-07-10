@@ -34,13 +34,7 @@ export default async function OgImage({ params }) {
             padding: 60,
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 16,
-            }}
-          >
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <div
               style={{
                 display: "flex",
@@ -100,12 +94,7 @@ export default async function OgImage({ params }) {
         </div>
 
         {hasImage && (
-          <img
-            src={article.image_url}
-            width={420}
-            height={630}
-            style={{ objectFit: "cover" }}
-          />
+          <img src={article.image_url} width={420} height={630} style={{ objectFit: "cover" }} />
         )}
       </div>
     ),

@@ -54,13 +54,15 @@ async def api_get(path: str, params: dict | None = None):
 
 
 def article_text(article: dict) -> str:
-    category = (article.get("category") or {}).get("name", "Biznes darsi")
+    cat = article.get("category") or {}
+    category = cat.get("name", "Biznes darsi")
+    cat_slug = cat.get("slug", "biznesni-boshlash")
     return (
         f"🎓 <b>{html.escape(article['title'])}</b>\n\n"
         f"{html.escape(article['summary'])}\n\n"
         f"💡 <i>{html.escape(article.get('practical_note', ''))}</i>\n\n"
         f"📂 {html.escape(category)}\n"
-        f"<a href=\"{SITE_URL}/maqola/{article['slug']}\">📖 Darsni to'liq o'qish</a>"
+        f"<a href=\"{SITE_URL}/{cat_slug}/{article['slug']}\">📖 Darsni to'liq o'qish</a>"
     )
 
 

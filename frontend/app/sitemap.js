@@ -17,15 +17,18 @@ export default async function sitemap() {
     fetchJson(`${API_URL}/api/categories`),
   ]);
 
-  const articleUrls = (articles || []).map((article) => ({
-    url: `${SITE_URL}/maqola/${article.slug}`,
-    lastModified: article.published_at ? new Date(article.published_at) : new Date(),
-    changeFrequency: "weekly",
-    priority: 0.7,
-  }));
+  const articleUrls = (articles || []).map((article) => {
+    const catSlug = article.category?.slug || "biznesni-boshlash";
+    return {
+      url: `${SITE_URL}/${catSlug}/${article.slug}`,
+      lastModified: article.published_at ? new Date(article.published_at) : new Date(),
+      changeFrequency: "weekly",
+      priority: 0.7,
+    };
+  });
 
   const categoryUrls = (categories || []).map((cat) => ({
-    url: `${SITE_URL}/kategoriya/${cat.slug}`,
+    url: `${SITE_URL}/${cat.slug}`,
     lastModified: new Date(),
     changeFrequency: "daily",
     priority: 0.8,

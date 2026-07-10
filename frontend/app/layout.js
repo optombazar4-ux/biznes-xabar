@@ -15,6 +15,9 @@ export const metadata = {
   },
   description: DESCRIPTION,
   applicationName: SITE_NAME,
+  verification: {
+    google: "oBW8_eXRTNmBH_V0h0JfkSUkhxGeh618ukJ7bWtIhPQ",
+  },
   alternates: {
     canonical: "/",
     types: {
