@@ -31,15 +31,16 @@ export default async function Header() {
             >
               🤖 Telegram Bot
             </a>
-            <form action="/qidiruv" className="flex gap-2">
+            <form action="/qidiruv" className="relative w-full sm:w-72">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                🔍
+              </span>
               <input
                 name="q"
-                placeholder="Qidiruv..."
-                className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm outline-none focus:border-amber-500"
+                placeholder="Darslardan qidiring..."
+                aria-label="Darslardan qidiruv"
+                className="w-full rounded-lg border border-slate-700 bg-slate-900 py-2 pl-9 pr-3 text-sm outline-none focus:border-amber-500"
               />
-              <button className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm hover:bg-amber-500">
-                🔍
-              </button>
             </form>
           </div>
         </div>

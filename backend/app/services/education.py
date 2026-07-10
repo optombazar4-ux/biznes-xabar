@@ -159,11 +159,26 @@ def _generate_with_claude(topic: str) -> dict:
     return json.loads(text)
 
 
+# AI ba'zan xato yozadigan teglarni to'g'rilash
+TAG_FIXES = {
+    "tadkorlik": "tadbirkorlik",
+    "tadbirkolik": "tadbirkorlik",
+}
+
+
+def _clean_tags(tags) -> list[str]:
+    cleaned = []
+    for tag in (tags or []):
+        t = str(tag).strip()
+        cleaned.append(TAG_FIXES.get(t.lower(), t))
+    return cleaned[:6]
+
+
 def generate_lesson(topic: str) -> dict:
     """Bitta biznes darsi maqolasini yaratadi."""
     if AI_PROVIDER == "claude":
         result = _generate_with_claude(topic)
     else:
         result = _generate_with_gemini(topic)
-    result["teglar"] = [str(t) for t in (result.get("teglar") or [])][:6]
+    result["teglar"] = _clean_tags(result.get("teglar"))
     return result

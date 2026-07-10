@@ -1,8 +1,8 @@
 import Link from "next/link";
-import AdPlaceholder from "../../../components/AdPlaceholder";
 import MarkdownContent from "../../../components/MarkdownContent";
 import { apiGet } from "../../../lib/api";
 import { SITE_URL, SITE_NAME } from "../../../lib/site";
+import { readingMinutes, levelForCategory, formatDate } from "../../../lib/lesson";
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
@@ -75,9 +75,9 @@ export default async function ArticlePage({ params }) {
     );
   }
 
-  const date = article.published_at
-    ? new Date(article.published_at).toLocaleDateString("uz-UZ")
-    : "";
+  const date = formatDate(article.published_at);
+  const minutes = readingMinutes(article.content);
+  const level = levelForCategory(article.category?.slug);
   const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(`${SITE_URL}/maqola/${article.slug}`)}&text=${encodeURIComponent(article.title)}`;
 
   return (
@@ -97,7 +97,9 @@ export default async function ArticlePage({ params }) {
             {article.category.name}
           </Link>
         )}
-        <span>{date}</span>
+        <span>{level}</span>
+        <span>⏱ {minutes} daqiqa</span>
+        {date && <span>{date}</span>}
       </div>
 
       <h1 className="mb-4 text-3xl font-bold leading-tight">{article.title}</h1>
@@ -132,10 +134,6 @@ export default async function ArticlePage({ params }) {
             #{tag}
           </Link>
         ))}
-      </div>
-
-      <div className="mb-8">
-        <AdPlaceholder type="banner" />
       </div>
 
       <div className="flex flex-wrap items-center gap-4 border-t border-slate-800 pt-5 text-sm">

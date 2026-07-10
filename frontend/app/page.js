@@ -1,6 +1,5 @@
 import Link from "next/link";
 import ArticleCard from "../components/ArticleCard";
-import AdPlaceholder from "../components/AdPlaceholder";
 import { apiGet } from "../lib/api";
 
 // Har bir kurikulum bo'limi uchun ikonka
@@ -12,6 +11,13 @@ const SECTION_ICONS = {
   "onlayn-biznes": "🛒",
   "amaliy-konikmalar": "🎯",
 };
+
+// Foydalanuvchi turini tanlash — maqsadga qarab tegishli bo'limga yo'naltiradi
+const USER_GOALS = [
+  { label: "Biznes boshlamoqchiman", emoji: "🚀", slug: "biznesni-boshlash" },
+  { label: "Sotuvni oshirmoqchiman", emoji: "📣", slug: "marketing-sotuv" },
+  { label: "Moliyani tartibga solmoqchiman", emoji: "💰", slug: "moliya" },
+];
 
 export default async function HomePage() {
   const [latest, categories, trends] = await Promise.all([
@@ -25,7 +31,7 @@ export default async function HomePage() {
   return (
     <div className="py-8">
       {/* Hero */}
-      <section className="mb-10 rounded-2xl border border-slate-800 bg-gradient-to-br from-amber-950/40 to-slate-900 p-8 text-center">
+      <section className="mb-8 rounded-2xl border border-slate-800 bg-gradient-to-br from-amber-950/40 to-slate-900 p-8 text-center">
         <h1 className="mx-auto max-w-2xl text-2xl font-bold leading-tight sm:text-3xl">
           O&apos;zbekistonda biznes ochish va yuritishni o&apos;rganing
         </h1>
@@ -33,6 +39,29 @@ export default async function HomePage() {
           Jahon tajribasi asosida tayyorlangan amaliy biznes darslari — biznesni boshlash,
           moliya, marketing, sotuv, boshqaruv va onlayn biznes bo&apos;yicha.
         </p>
+        <Link
+          href="/kategoriya/biznesni-boshlash"
+          className="mt-6 inline-block rounded-xl bg-amber-500 px-6 py-3 font-bold text-slate-950 transition hover:bg-amber-400"
+        >
+          🎓 Bepul o&apos;rganishni boshlash
+        </Link>
+      </section>
+
+      {/* Foydalanuvchi maqsadi */}
+      <section className="mb-10">
+        <p className="mb-3 text-center text-sm text-slate-400">Nimadan boshlaymiz?</p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {USER_GOALS.map((goal) => (
+            <Link
+              key={goal.slug}
+              href={`/kategoriya/${goal.slug}`}
+              className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm font-medium transition hover:border-amber-500 hover:bg-slate-900"
+            >
+              <span className="text-2xl">{goal.emoji}</span>
+              <span>{goal.label}</span>
+            </Link>
+          ))}
+        </div>
       </section>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_300px]">
@@ -76,10 +105,6 @@ export default async function HomePage() {
         </div>
 
         <aside className="space-y-8">
-          <section>
-            <AdPlaceholder type="sidebar" />
-          </section>
-
           <section>
             <h2 className="mb-3 font-bold">🔖 Ommabop mavzular</h2>
             <div className="flex flex-wrap gap-2">
