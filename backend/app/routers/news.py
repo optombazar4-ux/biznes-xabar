@@ -9,8 +9,12 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import Article, Category
 from ..schemas import ArticleOut
+from ..services.education import LESSON_TOPICS
 
 router = APIRouter(prefix="/api/news", tags=["darslar"])
+
+# Mavzu -> kurikulumdagi tartib raqami (kurs ketma-ketligi uchun)
+_TOPIC_ORDER = {topic: i for i, (_, topic) in enumerate(LESSON_TOPICS)}
 
 
 def published(db: Session):
@@ -21,13 +25,25 @@ def published(db: Session):
 def latest_lessons(
     db: Session = Depends(get_db),
     kategoriya: str | None = None,
+    tartib: str | None = None,
     limit: int = Query(default=20, le=100),
     offset: int = 0,
 ):
-    """Eng so'nggi darslar (ixtiyoriy bo'lim filtri bilan)."""
+    """Darslar ro'yxati (ixtiyoriy bo'lim filtri bilan).
+
+    tartib="kurs" bo'lsa — kurikulum ketma-ketligida (kurs uchun); aks holda
+    eng so'nggi birinchi.
+    """
     query = published(db)
     if kategoriya:
         query = query.join(Category).filter(Category.slug == kategoriya)
+
+    if tartib == "kurs":
+        # Kurikulum tartibida: mavzu ro'yxatidagi o'rniga qarab saralaymiz
+        lessons = query.all()
+        lessons.sort(key=lambda a: _TOPIC_ORDER.get(a.original_title, 10_000))
+        return lessons[offset:offset + limit]
+
     return (
         query.order_by(Article.published_at.desc())
         .offset(offset)

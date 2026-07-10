@@ -1,5 +1,6 @@
 import Link from "next/link";
 import MarkdownContent from "../../../components/MarkdownContent";
+import MarkRead from "../../../components/MarkRead";
 import { apiGet } from "../../../lib/api";
 import { SITE_URL, SITE_NAME } from "../../../lib/site";
 import { readingMinutes, levelForCategory, formatDate } from "../../../lib/lesson";
@@ -80,6 +81,23 @@ export default async function ArticlePage({ params }) {
   const level = levelForCategory(article.category?.slug);
   const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(`${SITE_URL}/maqola/${article.slug}`)}&text=${encodeURIComponent(article.title)}`;
 
+  // Kursdagi oldingi/keyingi dars (bir bo'lim ichida, kurikulum tartibida)
+  let prev = null;
+  let next = null;
+  if (article.category?.slug) {
+    const siblings =
+      (await apiGet("/api/news", {
+        kategoriya: article.category.slug,
+        tartib: "kurs",
+        limit: 100,
+      })) || [];
+    const idx = siblings.findIndex((a) => a.slug === article.slug);
+    if (idx !== -1) {
+      prev = idx > 0 ? siblings[idx - 1] : null;
+      next = idx < siblings.length - 1 ? siblings[idx + 1] : null;
+    }
+  }
+
   return (
     <article className="mx-auto max-w-3xl py-8">
       <script
@@ -88,6 +106,7 @@ export default async function ArticlePage({ params }) {
           __html: JSON.stringify(articleJsonLd(article)),
         }}
       />
+      <MarkRead slug={article.slug} />
       <div className="mb-3 flex flex-wrap items-center gap-3 text-sm text-slate-400">
         {article.category && (
           <Link
@@ -136,7 +155,56 @@ export default async function ArticlePage({ params }) {
         ))}
       </div>
 
+      {/* Ogohlantirish — moliyaviy/huquqiy mas'uliyat */}
+      <div className="mb-6 rounded-xl border border-slate-800 bg-slate-900/50 p-4 text-xs leading-relaxed text-slate-400">
+        <strong className="text-slate-300">Ogohlantirish:</strong> Ushbu dars umumiy
+        ma&apos;lumot va ta&apos;lim maqsadida tayyorlangan. Soliq, qonun va moliyaviy
+        qarorlar bo&apos;yicha aniq holatingiz uchun rasmiy manbalar (soliq.uz, lex.uz) yoki
+        malakali mutaxassis bilan maslahatlashing.
+      </div>
+
+      {/* Muallif / yangilanish */}
+      <div className="mb-6 flex flex-wrap items-center gap-2 border-t border-slate-800 pt-5 text-sm text-slate-400">
+        <span className="text-lg">🎓</span>
+        <span className="font-semibold text-slate-200">Biznes Darslari jamoasi</span>
+        {date && <span>· Yangilangan: {date}</span>}
+      </div>
+
+      {/* Oldingi / keyingi dars */}
+      {(prev || next) && (
+        <nav className="mb-6 grid gap-3 sm:grid-cols-2">
+          {prev ? (
+            <Link
+              href={`/maqola/${prev.slug}`}
+              className="rounded-xl border border-slate-800 p-4 transition hover:border-amber-600"
+            >
+              <div className="text-xs text-slate-500">← Oldingi dars</div>
+              <div className="mt-1 line-clamp-2 text-sm font-medium">{prev.title}</div>
+            </Link>
+          ) : (
+            <span />
+          )}
+          {next && (
+            <Link
+              href={`/maqola/${next.slug}`}
+              className="rounded-xl border border-amber-600/60 bg-amber-500/5 p-4 text-right transition hover:border-amber-500"
+            >
+              <div className="text-xs text-amber-400">Keyingi dars →</div>
+              <div className="mt-1 line-clamp-2 text-sm font-medium">{next.title}</div>
+            </Link>
+          )}
+        </nav>
+      )}
+
       <div className="flex flex-wrap items-center gap-4 border-t border-slate-800 pt-5 text-sm">
+        {article.category && (
+          <Link
+            href={`/kategoriya/${article.category.slug}`}
+            className="rounded-lg border border-slate-700 px-3 py-1.5 text-slate-200 hover:border-amber-500"
+          >
+            ← Kursga qaytish
+          </Link>
+        )}
         <a
           href={shareUrl}
           target="_blank"
