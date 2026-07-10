@@ -5,7 +5,7 @@ tashqi parser kutubxonalariga bog'liq emas.
 """
 
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
 from xml.etree import ElementTree
 
@@ -13,7 +13,7 @@ import httpx
 from sqlalchemy.orm import Session
 
 from ..models import Article
-from ..utils import title_hash
+from ..utils import is_near_duplicate, title_hash, title_tokens
 
 FEEDS = [
     {"name": "BBC Business", "url": "https://feeds.bbci.co.uk/news/business/rss.xml"},
@@ -124,6 +124,14 @@ def collect_news(db: Session, per_feed: int = 5) -> list[dict]:
     """RSS/Atom manbalardan yangi (bazada yo'q) yangiliklarni qaytaradi."""
     existing_urls = {u for (u,) in db.query(Article.original_url).all()}
     existing_hashes = {title_hash(t) for (t,) in db.query(Article.original_title).all()}
+    # So'nggi maqolalar sarlavhalari (yaqin-dublikatni aniqlash uchun): bir voqea
+    # turli manbalarda har xil sarlavha bilan chiqishi mumkin — ularni AI chaqiruvidan
+    # oldin filtrlaymiz. Faqat so'nggi 7 kun — eski maqolalar bilan solishtirish shart emas.
+    recent_cutoff = datetime.utcnow() - timedelta(days=7)
+    seen_tokens = [
+        title_tokens(t) for (t,) in db.query(Article.original_title)
+        .filter(Article.created_at >= recent_cutoff).all()
+    ]
 
     fresh: list[dict] = []
     with httpx.Client(timeout=20, follow_redirects=True, headers=HEADERS) as client:
@@ -143,6 +151,11 @@ def collect_news(db: Session, per_feed: int = 5) -> list[dict]:
                 # Dublikat: URL yoki normallashtirilgan sarlavha bo'yicha
                 if url in existing_urls or title_hash(title) in existing_hashes:
                     continue
+                # Yaqin-dublikat: bir voqeaning boshqa manbadagi varianti
+                tokens = title_tokens(title)
+                if is_near_duplicate(tokens, seen_tokens):
+                    print(f"  ⊘ Yaqin-dublikat o'tkazildi: {title[:60]}")
+                    continue
 
                 fresh.append({
                     "title": title,
@@ -154,5 +167,6 @@ def collect_news(db: Session, per_feed: int = 5) -> list[dict]:
                 })
                 existing_urls.add(url)
                 existing_hashes.add(title_hash(title))
+                seen_tokens.append(tokens)
 
     return fresh

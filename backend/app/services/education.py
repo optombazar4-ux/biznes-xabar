@@ -20,7 +20,7 @@ from ..config import (
     GEMINI_MODEL,
 )
 from ..models import Article
-from ..utils import title_hash
+from ..utils import is_near_duplicate, title_hash, title_tokens
 from .collector import HEADERS, _parse_feed
 
 # Chet el biznes-ta'lim manbalari — biznes qurish va yuritishni o'rgatadigan
@@ -73,6 +73,9 @@ def collect_lesson_entries(db: Session, per_feed: int = 3) -> list[dict]:
     """Dars manbalaridan hali ishlatilmagan (bazada yo'q) maqolalarni qaytaradi."""
     existing_urls = {u for (u,) in db.query(Article.original_url).all()}
     existing_hashes = {title_hash(t) for (t,) in db.query(Article.original_title).all()}
+    # Barcha mavjud sarlavhalar bo'yicha yaqin-dublikat tekshiruvi: darslar
+    # evergreen, shuning uchun ilgari yoritilgan mavzuni qayta olmaymiz.
+    seen_tokens = [title_tokens(t) for (t,) in db.query(Article.original_title).all()]
 
     fresh: list[dict] = []
     with httpx.Client(timeout=20, follow_redirects=True, headers=HEADERS) as client:
@@ -91,6 +94,9 @@ def collect_lesson_entries(db: Session, per_feed: int = 3) -> list[dict]:
                     continue
                 if url in existing_urls or title_hash(title) in existing_hashes:
                     continue
+                tokens = title_tokens(title)
+                if is_near_duplicate(tokens, seen_tokens):
+                    continue
 
                 fresh.append({
                     "title": title,
@@ -101,6 +107,7 @@ def collect_lesson_entries(db: Session, per_feed: int = 3) -> list[dict]:
                 })
                 existing_urls.add(url)
                 existing_hashes.add(title_hash(title))
+                seen_tokens.append(tokens)
 
     return fresh
 
