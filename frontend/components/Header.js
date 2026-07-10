@@ -9,9 +9,9 @@ export default async function Header() {
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-            <img src="/logo.svg" alt="Biznes Xabar logotipi" width={36} height={36} />
+            <img src="/logo.svg" alt="Biznes Darslari logotipi" width={36} height={36} />
             <span>
-              Biznes <span className="text-amber-400">Xabar</span>
+              Biznes <span className="text-amber-400">Darslari</span>
             </span>
           </Link>
           <div className="flex flex-wrap items-center gap-4">

@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from .config import FRONTEND_ORIGIN, MEDIA_DIR
 from .database import Base, SessionLocal, engine
 from .routers import admin, categories, news
-from .seed import seed_categories
+from .seed import prune_legacy_content, seed_categories
 from .pipeline import run_pipeline
 from .bot.bot import main as run_bot
 
@@ -20,10 +20,10 @@ async def pipeline_loop_task():
     await asyncio.sleep(15)
     while True:
         try:
-            print("⏳ Running background news pipeline...")
+            print("⏳ Running background lessons pipeline...")
             loop = asyncio.get_running_loop()
-            saved = await loop.run_in_executor(None, run_pipeline, 5)
-            print(f"✅ Pipeline done. Saved {saved} articles.")
+            saved = await loop.run_in_executor(None, run_pipeline)
+            print(f"✅ Pipeline done. Created {saved} lessons.")
         except Exception as e:
             print(f"❌ Pipeline loop error: {e}")
         
@@ -46,6 +46,7 @@ async def lifespan(app: FastAPI):
     db = SessionLocal()
     try:
         seed_categories(db)
+        prune_legacy_content(db)
     finally:
         db.close()
     
@@ -69,8 +70,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Biznes Xabar API",
-    description="Biznes va tadbirkorlik yangiliklari — o'zbek tilida",
+    title="Biznes Darslari API",
+    description="O'zbekistonda biznes ochish va yuritish bo'yicha amaliy darslar",
     lifespan=lifespan,
 )
 
@@ -100,4 +101,4 @@ app.mount("/media", StaticFiles(directory=MEDIA_DIR), name="media")
 
 @app.get("/")
 def root():
-    return {"loyiha": "Biznes Xabar", "hujjatlar": "/docs"}
+    return {"loyiha": "Biznes Darslari", "hujjatlar": "/docs"}

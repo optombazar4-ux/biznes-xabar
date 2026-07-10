@@ -1,7 +1,7 @@
 export const metadata = {
   title: "Biz haqimizda",
   description:
-    "Biznes Xabar — biznes va tadbirkorlik yangiliklarini o'zbek tilida yetkazuvchi platforma. Kontent qanday tayyorlanishi va tahririyat tamoyillari haqida.",
+    "Biznes Darslari — O'zbekistonda biznes ochish va yuritishni o'rgatuvchi platforma. Darslar qanday tayyorlanishi haqida.",
   alternates: { canonical: "/haqida" },
 };
 
@@ -12,32 +12,32 @@ export default function AboutPage() {
 
       <div className="space-y-5 leading-relaxed text-slate-300">
         <p>
-          <strong className="text-white">Biznes Xabar</strong> (biznesxabar.uz) — dunyodagi eng muhim
-          biznes va tadbirkorlik yangiliklarini o&apos;zbek tilida, qisqa va tushunarli shaklda
-          yetkazib beruvchi yangiliklar platformasi. Maqsadimiz — O&apos;zbekistondagi
-          tadbirkorlar, investorlar va biznesga qiziquvchilarni jahon bozoridagi eng
-          so&apos;nggi o&apos;zgarishlardan xabardor qilib borish.
+          <strong className="text-white">Biznes Darslari</strong> (biznesxabar.uz) —
+          O&apos;zbekistonda biznes ochish va yuritishni o&apos;rgatuvchi ta&apos;lim
+          platformasi. Maqsadimiz — o&apos;zbek tadbirkorlariga biznesni boshlash, moliyani
+          boshqarish, marketing, sotuv va o&apos;sish bo&apos;yicha amaliy, tushunarli darslar
+          berish.
         </p>
 
-        <h2 className="pt-2 text-xl font-bold text-white">Kontent qanday tayyorlanadi</h2>
+        <h2 className="pt-2 text-xl font-bold text-white">Darslar qanday tayyorlanadi</h2>
         <p>
-          Biz BBC Business, Forbes, Inc.com, TechCrunch va CNBC kabi jahonning yetakchi
-          biznes nashrlarining ochiq RSS manbalarini kuzatib boramiz. Har bir yangilik
-          sun&apos;iy intellekt yordamida o&apos;zbek tiliga
-          moslashtiriladi: sarlavha, qisqa xulosa, to&apos;liq bayon va &quot;bu nima
-          degani?&quot; amaliy izohi tayyorlanadi.
+          Har bir dars jahon miqyosida isbotlangan eng yaxshi biznes amaliyotlariga (best
+          practices) asoslanadi, LEKIN <strong className="text-white">O&apos;zbekiston
+          sharoitiga moslashtiriladi</strong>: mahalliy ro&apos;yxatdan o&apos;tish (YaTT/MChJ),
+          O&apos;zbekiston soliqlari, Payme/Click/Uzum kabi mahalliy tizimlar, so&apos;mdagi
+          realistik misollar. Bu shunchaki tarjima emas — o&apos;zbek tadbirkori ertaga
+          qo&apos;llay oladigan amaliy bilim.
         </p>
         <p>
-          Halollik — asosiy tamoyilimiz: har bir maqola tagida <strong className="text-white">asl
-          manbaga havola</strong> ko&apos;rsatiladi, muhimlik bahosi (1–5 yulduz) esa
-          yangilikning soha uchun ahamiyatini bildiradi. Maqolalar saytga chiqishidan oldin
-          tahririy nazoratdan o&apos;tadi.
+          Darslar <strong className="text-white">eskirmaydi (evergreen)</strong>: bir marta
+          tayyorlangan sifatli dars yillar davomida foydali bo&apos;lib qoladi. Mavzular
+          biznesni boshlashdan tortib masshtablashgacha bo&apos;lgan yo&apos;lni qamrab oladi.
         </p>
 
         <h2 className="pt-2 text-xl font-bold text-white">Nima uchun bepul</h2>
         <p>
-          Biznes Xabar — ochiq platforma. Kontentimiz hammaga bepul, sayt reklama va homiylik
-          hisobidan rivojlantiriladi. Yangiliklardan birinchilardan bo&apos;lib xabar topish
+          Biznes Darslari — ochiq platforma. Barcha darslar bepul, sayt reklama va homiylik
+          hisobidan rivojlantiriladi. Yangi darslardan birinchilardan bo&apos;lib xabar topish
           uchun{" "}
           <a
             href="https://t.me/biznesxabari"

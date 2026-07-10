@@ -9,22 +9,20 @@ from ..models import Article
 
 
 def format_post(article: Article) -> str:
-    stars = "⭐" * max(1, min(5, article.importance))
-    category = article.category.name if article.category else "AI"
+    category = article.category.name if article.category else "Biznes darsi"
     return (
-        f"<b>{html.escape(article.title)}</b>\n\n"
+        f"🎓 <b>{html.escape(article.title)}</b>\n\n"
         f"{html.escape(article.summary)}\n\n"
         f"💡 <i>{html.escape(article.practical_note)}</i>\n\n"
-        f"📂 {html.escape(category)} | Ahamiyati: {stars}"
+        f"📂 {html.escape(category)}"
     )
 
 
 def build_reply_markup(article: Article) -> dict:
-    """Asl manba va Batafsil o'qish tugmalarini alohida bosiladigan tugma qatorlariga chiqaradi."""
+    """Darsni saytda to'liq o'qish uchun tugma."""
     return {
         "inline_keyboard": [
-            [{"text": "🔗 Asl manba", "url": article.original_url}],
-            [{"text": "📖 Batafsil o'qish", "url": f"{FRONTEND_ORIGIN}/maqola/{article.slug}"}],
+            [{"text": "📖 Darsni to'liq o'qish", "url": f"{FRONTEND_ORIGIN}/maqola/{article.slug}"}],
         ]
     }
 

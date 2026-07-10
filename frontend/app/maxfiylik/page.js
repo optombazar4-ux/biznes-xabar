@@ -1,7 +1,7 @@
 export const metadata = {
   title: "Maxfiylik siyosati",
   description:
-    "Biznes Xabar saytining maxfiylik siyosati: qanday ma'lumotlar to'planishi, cookie va mahalliy xotira ishlatilishi haqida.",
+    "Biznes Darslari saytining maxfiylik siyosati: qanday ma'lumotlar to'planishi, cookie va mahalliy xotira ishlatilishi haqida.",
   alternates: { canonical: "/maxfiylik" },
 };
 
@@ -14,7 +14,7 @@ export default function PrivacyPage() {
       <div className="space-y-5 leading-relaxed text-slate-300">
         <h2 className="text-xl font-bold text-white">Qanday ma&apos;lumot to&apos;playmiz</h2>
         <p>
-          Biznes Xabar saytidan foydalanish uchun ro&apos;yxatdan o&apos;tish talab qilinmaydi va
+          Biznes Darslari saytidan foydalanish uchun ro&apos;yxatdan o&apos;tish talab qilinmaydi va
           biz sizdan shaxsiy ma&apos;lumot so&apos;ramaymiz. Saytga tashrif davomida quyidagi
           texnik vositalar ishlatiladi:
         </p>

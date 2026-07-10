@@ -3,7 +3,7 @@ import { Chart } from "../lib/pwa-icon";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "Biznes Xabar — Biznes va tadbirkorlik yangiliklari";
+export const alt = "Biznes Darslari — O'zbekistonda biznes ochish va yuritish";
 
 export default function OgImage() {
   return new ImageResponse(
@@ -45,10 +45,10 @@ export default function OgImage() {
           }}
         >
           <span>Biznes</span>
-          <span style={{ color: "#fbbf24" }}>Xabar</span>
+          <span style={{ color: "#fbbf24" }}>Darslari</span>
         </div>
-        <div style={{ color: "#94a3b8", fontSize: 32 }}>
-          Biznes va tadbirkorlik yangiliklari — o&apos;zbek tilida
+        <div style={{ color: "#94a3b8", fontSize: 30 }}>
+          O&apos;zbekistonda biznes ochish va yuritishni o&apos;rganing
         </div>
         <div style={{ color: "#475569", fontSize: 28 }}>biznesxabar.uz</div>
       </div>

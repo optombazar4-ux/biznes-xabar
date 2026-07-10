@@ -1,15 +1,15 @@
 export default function manifest() {
   return {
-    name: "Biznes Xabar — Biznes va tadbirkorlik yangiliklari",
-    short_name: "Biznes Xabar",
+    name: "Biznes Darslari — O'zbekistonda biznes ochish va yuritish",
+    short_name: "Biznes Darslari",
     description:
-      "Dunyodagi eng muhim biznes yangiliklari — qisqa, tushunarli va o'zbek tilida.",
+      "O'zbekistonda biznes ochish va yuritish bo'yicha amaliy darslar — jahon tajribasi asosida, o'zbek tilida.",
     start_url: "/",
     display: "standalone",
     background_color: "#020617",
     theme_color: "#0f172a",
     lang: "uz",
-    categories: ["news", "technology"],
+    categories: ["education", "business"],
     icons: [
       {
         src: "/icon-192",

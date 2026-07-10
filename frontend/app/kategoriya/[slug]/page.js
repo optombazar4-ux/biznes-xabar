@@ -8,12 +8,12 @@ export async function generateMetadata({ params }) {
   const name = category?.name || slug;
 
   return {
-    title: `${name} yangiliklari`,
-    description: `${name} bo'yicha eng so'nggi biznes va tadbirkorlik yangiliklari — o'zbek tilida.`,
+    title: `${name} — biznes darslari`,
+    description: `${name} bo'yicha amaliy biznes darslari — O'zbekiston sharoitiga moslashtirilgan, o'zbek tilida.`,
     alternates: { canonical: `/kategoriya/${slug}` },
     openGraph: {
-      title: `${name} yangiliklari`,
-      description: `${name} bo'yicha eng so'nggi biznes yangiliklari — o'zbek tilida.`,
+      title: `${name} — biznes darslari`,
+      description: `${name} bo'yicha amaliy biznes darslari — o'zbek tilida.`,
       url: `/kategoriya/${slug}`,
     },
   };
@@ -37,7 +37,7 @@ export default async function CategoryPage({ params }) {
           ))}
         </div>
       ) : (
-        <p className="text-slate-400">Bu kategoriyada hali yangiliklar yo&apos;q.</p>
+        <p className="text-slate-400">Bu bo&apos;limda hali darslar yo&apos;q.</p>
       )}
     </div>
   );

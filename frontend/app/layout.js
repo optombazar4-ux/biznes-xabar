@@ -5,12 +5,12 @@ import SubscribePopup from "../components/SubscribePopup";
 import { SITE_URL, SITE_NAME, SITE_ALT_NAMES } from "../lib/site";
 
 const DESCRIPTION =
-  "Dunyodagi eng muhim biznes va tadbirkorlik yangiliklari — qisqa, tushunarli va o'zbek tilida. Startaplar, investitsiyalar, moliya bozorlari va boshqalar.";
+  "O'zbekistonda biznes ochish va yuritish bo'yicha amaliy darslar — jahon tajribasi asosida, o'zbek tilida. Biznesni boshlash, moliya, marketing, sotuv, boshqaruv va onlayn biznes.";
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} — Biznes va tadbirkorlik yangiliklari o'zbek tilida`,
+    default: `${SITE_NAME} — O'zbekistonda biznes ochish va yuritishni o'rganing`,
     template: `%s — ${SITE_NAME}`,
   },
   description: DESCRIPTION,
@@ -28,17 +28,17 @@ export const metadata = {
     url: "/",
     siteName: SITE_NAME,
     locale: "uz_UZ",
-    title: `${SITE_NAME} — Biznes va tadbirkorlik yangiliklari o'zbek tilida`,
+    title: `${SITE_NAME} — O'zbekistonda biznes ochish va yuritishni o'rganing`,
     description: DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} — Biznes va tadbirkorlik yangiliklari`,
+    title: `${SITE_NAME} — Amaliy biznes darslari`,
     description: DESCRIPTION,
   },
   appleWebApp: {
     capable: true,
-    title: "Biznes Xabar",
+    title: SITE_NAME,
     statusBarStyle: "black-translucent",
   },
 };
@@ -127,7 +127,7 @@ export default function RootLayout({ children }) {
               🤖 Telegram Bot (@Biznesxabar_bot)
             </a>
           </div>
-          © {new Date().getFullYear()} Biznes Xabar (biznesxabar.uz) — biznes va tadbirkorlik yangiliklari o&apos;zbek tilida
+          © {new Date().getFullYear()} Biznes Darslari (biznesxabar.uz) — O&apos;zbekistonda biznes ochish va yuritish bo&apos;yicha amaliy darslar
         </footer>
         <SubscribePopup />
         <PwaRegister />

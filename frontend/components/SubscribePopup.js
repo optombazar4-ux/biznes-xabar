@@ -57,11 +57,11 @@ export default function SubscribePopup() {
         </button>
 
         <div className="mb-2 flex items-center gap-2">
-          <img src="/logo.svg" alt="Biznes Xabar" width={36} height={36} />
-          <p className="font-bold">biznes yangiliklaridan orqada qolmang!</p>
+          <img src="/logo.svg" alt="Biznes Darslari" width={36} height={36} />
+          <p className="font-bold">Yangi biznes darslaridan xabardor bo&apos;ling!</p>
         </div>
         <p className="mb-4 text-sm text-slate-400">
-          Eng muhim biznes va tadbirkorlik yangiliklari — har kuni, o&apos;zbek
+          O&apos;zbekistonda biznes ochish va yuritish bo&apos;yicha amaliy darslar — o&apos;zbek
           tilida. Telegram kanalimizga obuna bo&apos;ling.
         </p>
 

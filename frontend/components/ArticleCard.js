@@ -1,10 +1,7 @@
 import Link from "next/link";
 
 export default function ArticleCard({ article, compact = false }) {
-  const stars = "⭐".repeat(Math.max(1, Math.min(5, article.importance)));
-  const date = article.published_at
-    ? new Date(article.published_at).toLocaleDateString("uz-UZ")
-    : "";
+  const category = article.category?.name || "Biznes darsi";
 
   if (compact) {
     return (
@@ -12,9 +9,7 @@ export default function ArticleCard({ article, compact = false }) {
         href={`/maqola/${article.slug}`}
         className="block rounded-lg border border-slate-800 p-3 hover:border-amber-600"
       >
-        <div className="mb-1 text-xs text-slate-400">
-          {article.category?.name} · {stars}
-        </div>
+        <div className="mb-1 text-xs text-slate-400">{category}</div>
         <div className="text-sm font-medium leading-snug">{article.title}</div>
       </Link>
     );
@@ -27,15 +22,14 @@ export default function ArticleCard({ article, compact = false }) {
         <img src={article.image_url} alt="" className="h-44 w-full object-cover" />
       ) : (
         <div className="flex h-44 w-full items-center justify-center bg-gradient-to-br from-amber-950 to-slate-900 text-5xl">
-          🤖
+          🎓
         </div>
       )}
       <div className="p-5">
-        <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
+        <div className="mb-2 text-xs">
           <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 font-semibold text-amber-400">
-            {article.category?.name || "AI"}
+            {category}
           </span>
-          <span>{stars}</span>
         </div>
         <Link href={`/maqola/${article.slug}`}>
           <h2 className="mb-2 text-lg font-semibold leading-snug hover:text-amber-400">
@@ -45,10 +39,9 @@ export default function ArticleCard({ article, compact = false }) {
         <p className="mb-3 line-clamp-3 text-sm leading-relaxed text-slate-300">
           {article.summary}
         </p>
-        <div className="flex items-center justify-between text-xs text-slate-500">
-          <span>{date}</span>
+        <div className="flex items-center justify-end text-xs text-slate-500">
           <Link href={`/maqola/${article.slug}`} className="text-amber-400 hover:underline">
-            To&apos;liq o&apos;qish →
+            Darsni o&apos;qish →
           </Link>
         </div>
       </div>

@@ -1,7 +1,7 @@
 export const metadata = {
   title: "Aloqa",
   description:
-    "Biznes Xabar tahririyati bilan bog'lanish: takliflar, xatolar haqida xabar berish va hamkorlik bo'yicha murojaatlar.",
+    "Biznes Darslari jamoasi bilan bog'lanish: takliflar, xatolar haqida xabar berish va hamkorlik bo'yicha murojaatlar.",
   alternates: { canonical: "/aloqa" },
 };
 
@@ -11,14 +11,14 @@ const CONTACTS = [
     title: "Telegram kanal",
     value: "@biznesxabari",
     href: "https://t.me/biznesxabari",
-    note: "Yangiliklar va e'lonlar",
+    note: "Darslar va e'lonlar",
   },
   {
     icon: "🤖",
     title: "Telegram bot",
     value: "@Biznesxabar_bot",
     href: "https://t.me/Biznesxabar_bot",
-    note: "Yangiliklarni botda o'qish",
+    note: "Darslarni botda o'qish",
   },
   {
     icon: "✉️",

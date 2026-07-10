@@ -4,14 +4,14 @@ import { Chart } from "../../../lib/pwa-icon";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "Biznes Xabar maqolasi";
+export const alt = "Biznes Darslari";
 
 export default async function OgImage({ params }) {
   const { slug } = await params;
   const article = await apiGet(`/api/news/${slug}`);
 
-  const title = article?.seo_title || article?.title || "Biznes Xabar";
-  const category = article?.category?.name || "biznes yangiliklari";
+  const title = article?.seo_title || article?.title || "Biznes Darslari";
+  const category = article?.category?.name || "biznes darsi";
   const hasImage = article?.image_url?.startsWith("http");
 
   return new ImageResponse(
@@ -65,7 +65,7 @@ export default async function OgImage({ params }) {
               }}
             >
               <span>Biznes</span>
-              <span style={{ color: "#fbbf24" }}>Xabar</span>
+              <span style={{ color: "#fbbf24" }}>Darslari</span>
             </div>
           </div>
 

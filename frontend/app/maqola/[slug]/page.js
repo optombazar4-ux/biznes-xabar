@@ -40,7 +40,7 @@ function articleJsonLd(article) {
   const url = `${SITE_URL}/maqola/${article.slug}`;
   return {
     "@context": "https://schema.org",
-    "@type": "NewsArticle",
+    "@type": "Article",
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
     headline: article.title,
     description: article.summary,
@@ -60,7 +60,6 @@ function articleJsonLd(article) {
       url: SITE_URL,
     },
     publisher: { "@id": `${SITE_URL}/#organization` },
-    isBasedOn: article.original_url,
   };
 }
 
@@ -76,9 +75,8 @@ export default async function ArticlePage({ params }) {
     );
   }
 
-  const stars = "⭐".repeat(Math.max(1, Math.min(5, article.importance)));
   const date = article.published_at
-    ? new Date(article.published_at).toLocaleString("uz-UZ")
+    ? new Date(article.published_at).toLocaleDateString("uz-UZ")
     : "";
   const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(`${SITE_URL}/maqola/${article.slug}`)}&text=${encodeURIComponent(article.title)}`;
 
@@ -99,7 +97,6 @@ export default async function ArticlePage({ params }) {
             {article.category.name}
           </Link>
         )}
-        <span>{stars}</span>
         <span>{date}</span>
       </div>
 
@@ -142,14 +139,6 @@ export default async function ArticlePage({ params }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-4 border-t border-slate-800 pt-5 text-sm">
-        <a
-          href={article.original_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-amber-400 hover:underline"
-        >
-          🔗 Asl manba ({article.source_name})
-        </a>
         <a
           href={shareUrl}
           target="_blank"
