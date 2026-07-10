@@ -10,6 +10,7 @@ Muntazam ishlashi uchun cron'ga qo'ying, masalan har soatda:
   0 * * * * cd /path/backend && .venv/bin/python -m app.pipeline
 """
 
+import random
 from datetime import datetime, timedelta
 
 from .config import (
@@ -58,7 +59,8 @@ def maybe_generate_lesson(db, categories) -> bool:
     entries = collect_lesson_entries(db, per_feed=3)
     if not entries:
         return False
-    entry = entries[0]
+    # Barcha manbalar orasidan tasodifiy tanlash — bitta manbaga qiyshaymaslik uchun
+    entry = random.choice(entries)
 
     print(f"🎓 Biznes darsi tarjima qilinmoqda: {entry['title'][:60]}")
     try:

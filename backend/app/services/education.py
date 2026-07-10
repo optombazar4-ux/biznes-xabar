@@ -23,15 +23,16 @@ from ..models import Article
 from ..utils import title_hash
 from .collector import HEADERS, _parse_feed
 
-# Chet el biznes-ta'lim manbalari — evergreen "qanday qilish kerak" kontenti
-# (yangilik emas, doimiy amaliy bilim: marketing, sotuv, boshqaruv, brending)
+# Chet el biznes-ta'lim manbalari — biznes qurish va yuritishni o'rgatadigan
+# evergreen "qanday qilish kerak" kontenti (yangilik emas). Tanlov ataylab
+# biznes- qurish spektrini qamrab oladi: tadbirkorlik, startap boshqaruvi,
+# kichik biznes operatsiyalari, marketing va sotuv.
 LESSON_FEEDS = [
     {"name": "Entrepreneur", "url": "https://www.entrepreneur.com/latest.rss"},
+    {"name": "StartupNation", "url": "https://startupnation.com/feed/"},
+    {"name": "Small Business Trends", "url": "https://smallbiztrends.com/feed"},
     {"name": "HubSpot Marketing", "url": "https://blog.hubspot.com/marketing/rss.xml"},
     {"name": "HubSpot Sales", "url": "https://blog.hubspot.com/sales/rss.xml"},
-    {"name": "Neil Patel", "url": "https://neilpatel.com/feed/"},
-    {"name": "Small Business Trends", "url": "https://smallbiztrends.com/feed"},
-    {"name": "Copyblogger", "url": "https://www.copyblogger.com/feed/"},
 ]
 
 SYSTEM_PROMPT = """**Rol:** Sen xalqaro biznes-ta'lim maqolalarini o'zbek tiliga moslashtiruvchi tajribali tarjimon va biznes-murabbiysan.
