@@ -21,6 +21,7 @@ FEEDS = [
     {"name": "Inc.com", "url": "https://www.inc.com/rss/"},
     {"name": "TechCrunch Startups", "url": "https://techcrunch.com/category/startups/feed/"},
     {"name": "CNBC Business", "url": "https://www.cnbc.com/id/10001147/device/rss/rss.html"},
+    {"name": "Business Insider", "url": "https://www.businessinsider.com/rss"},
 ]
 
 ATOM = "{http://www.w3.org/2005/Atom}"
