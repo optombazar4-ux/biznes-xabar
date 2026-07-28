@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import CourseList from "../../components/CourseList";
+import IdeaList from "../../components/IdeaList";
 import { apiGet } from "../../lib/api";
 import { readingMinutes } from "../../lib/lesson";
 import { SITE_URL } from "../../lib/site";
@@ -37,8 +38,11 @@ export default async function CoursePage({ params }) {
   const lessons = articles.map((a) => ({
     slug: a.slug,
     title: a.title,
+    summary: a.summary,
+    tags: a.tags,
     minutes: readingMinutes(a.content),
   }));
+  const isIdeas = kategoriya === "biznes-goyalari";
 
   const breadcrumbLd = {
     "@context": "https://schema.org",
@@ -56,12 +60,25 @@ export default async function CoursePage({ params }) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
       <p className="mb-1 text-sm font-semibold uppercase tracking-wide text-amber-400">
-        O&apos;quv yo&apos;nalishi
+        {isIdeas ? "Amaliy g'oyalar katalogi" : "O'quv yo'nalishi"}
       </p>
-      <h1 className="mb-6 text-2xl font-bold">📂 {category.name}</h1>
+      <h1 className="mb-3 text-2xl font-bold">
+        {isIdeas ? "💡" : "📂"} {category.name}
+      </h1>
+      {isIdeas && (
+        <p className="mb-6 max-w-2xl leading-relaxed text-slate-400">
+          Budjetingiz, ishlash joyingiz va biznes turiga mos g&apos;oyani tanlang.
+          Har bir g&apos;oyada boshlang&apos;ich xarajat, mijoz, daromad modeli,
+          7 kunlik sinov rejasi va asosiy xavflar ko&apos;rsatiladi.
+        </p>
+      )}
 
       {lessons.length > 0 ? (
-        <CourseList lessons={lessons} categorySlug={kategoriya} />
+        isIdeas ? (
+          <IdeaList ideas={lessons} />
+        ) : (
+          <CourseList lessons={lessons} categorySlug={kategoriya} />
+        )
       ) : (
         <p className="text-slate-400">Bu bo&apos;limda hali darslar yo&apos;q.</p>
       )}

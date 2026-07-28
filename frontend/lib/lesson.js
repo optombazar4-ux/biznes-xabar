@@ -8,6 +8,7 @@ export function readingMinutes(content) {
 
 // Bo'lim (kategoriya) bo'yicha darajani belgilaydi.
 const LEVEL_BY_CATEGORY = {
+  "biznes-goyalari": "G'oya",
   "biznesni-boshlash": "Boshlang'ich",
   moliya: "Boshlang'ich",
   "marketing-sotuv": "O'rta",

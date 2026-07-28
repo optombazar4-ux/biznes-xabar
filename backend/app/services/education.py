@@ -23,8 +23,88 @@ from ..config import (
     VERTEX_GEMINI_MODEL,
 )
 
+# O'zbekiston bozoriga mos konkret g'oyalar. Qiymatlar frontenddagi filtrlar va
+# AI yaratgan maqolalarning standart teglarini belgilaydi.
+IDEA_TOPIC_TAGS = {
+    "Uy sharoitida yarim tayyor mahsulot tayyorlash va sotish": [
+        "5 mln gacha", "uydan", "ishlab chiqarish",
+    ],
+    "Buyurtma asosida milliy shirinlik va pishiriq tayyorlash": [
+        "5 mln gacha", "uydan", "ishlab chiqarish",
+    ],
+    "Mikroko'kat yetishtirib kafe va restoranlarga sotish": [
+        "5 mln gacha", "uydan", "qishloq",
+    ],
+    "Ko'chat va mavsumiy nihol yetishtirish biznesi": [
+        "5 mln gacha", "qishloq", "ishlab chiqarish",
+    ],
+    "Qishloq tuxumini shahardagi mijozlarga obuna asosida yetkazish": [
+        "5 mln gacha", "qishloq", "savdo",
+    ],
+    "Mahalliy sut mahsulotlarini qadoqlab sotish": [
+        "qishloq", "ishlab chiqarish", "savdo",
+    ],
+    "Mijoz joyiga borib mobil avtoyuvish xizmati ko'rsatish": [
+        "5 mln gacha", "xizmat",
+    ],
+    "Uy va ofislarni buyurtma asosida tozalash xizmati": [
+        "5 mln gacha", "xizmat",
+    ],
+    "Maishiy texnikani uyga borib ta'mirlash xizmati": [
+        "xizmat",
+    ],
+    "Uyda kiyim ta'mirlash va kichik tikuvchilik ustaxonasi": [
+        "5 mln gacha", "uydan", "xizmat",
+    ],
+    "Mahalliy kichik bizneslar uchun SMM xizmati": [
+        "5 mln gacha", "uydan", "onlayn", "xizmat",
+    ],
+    "Uzum Market sotuvchilari uchun mahsulot rasmi va qadoqlash xizmati": [
+        "5 mln gacha", "onlayn", "xizmat",
+    ],
+    "Telegram orqali mahalla do'koni va tezkor yetkazib berish": [
+        "5 mln gacha", "uydan", "onlayn", "savdo",
+    ],
+    "O'z kasbingiz bo'yicha onlayn mini-kurs va repetitorlik": [
+        "5 mln gacha", "uydan", "onlayn", "xizmat",
+    ],
+    "Mikrobizneslar uchun masofaviy hisob-kitob xizmati": [
+        "5 mln gacha", "uydan", "onlayn", "xizmat",
+    ],
+    "Kichik bizneslar uchun sodda sayt va Telegram bot tayyorlash": [
+        "5 mln gacha", "uydan", "onlayn", "xizmat",
+    ],
+    "Korporativ sovg'a qutilarini tayyorlash va sotish": [
+        "5 mln gacha", "uydan", "ishlab chiqarish", "savdo",
+    ],
+    "Mato sumka va qayta ishlatiladigan qadoq ishlab chiqarish": [
+        "ishlab chiqarish", "savdo",
+    ],
+    "Ofislarga uy taomi va tushlik to'plami yetkazib berish": [
+        "5 mln gacha", "uydan", "xizmat",
+    ],
+    "Tadbirlar uchun bezak va inventarni ijaraga berish": [
+        "xizmat",
+    ],
+    "Mahalliy do'konlar uchun B2B kuryerlik va yetkazib berish": [
+        "xizmat",
+    ],
+    "Ishlatilgan telefon va noutbuklarni tekshirib qayta sotish": [
+        "onlayn", "savdo",
+    ],
+    "Fermer mahsulotlarini birlashtirib shaharda buyurtma asosida sotish": [
+        "qishloq", "onlayn", "savdo",
+    ],
+    "Uy o'simliklari va florarium tayyorlab sotish": [
+        "5 mln gacha", "uydan", "ishlab chiqarish", "savdo",
+    ],
+}
+IDEA_TOPICS = list(IDEA_TOPIC_TAGS)
+
 # Kurikulum: (bo'lim_slug, mavzu). Bo'lim sluglari seed.py bilan mos bo'lishi shart.
-LESSON_TOPICS = [
+# Biznes g'oyalari ro'yxat boshida turadi, shunda yangi loyiha tezda foydali
+# g'oya kartalari bilan to'ladi.
+LESSON_TOPICS = [("biznes-goyalari", topic) for topic in IDEA_TOPICS] + [
     # --- Biznesni boshlash ---
     ("biznesni-boshlash", "Biznesni noldan qanday boshlash: bosqichma-bosqich qo'llanma"),
     ("biznesni-boshlash", "Biznes g'oyasini sinovdan o'tkazish: bozorni qanday tekshirish kerak"),
@@ -115,6 +195,31 @@ LESSON_SCHEMA = {
 }
 
 
+def _user_prompt(topic: str) -> str:
+    """G'oya maqolalariga bir xil, solishtirish oson bo'lgan tuzilma beradi."""
+    if topic not in IDEA_TOPIC_TAGS:
+        return f"Mavzu: {topic}"
+
+    filters = ", ".join(IDEA_TOPIC_TAGS[topic])
+    return f"""Biznes g'oyasi: {topic}
+Filtr teglari: {filters}
+
+Bu oddiy nazariy dars emas, amalga oshirish mumkin bo'lgan biznes g'oyasi kartasi.
+"maqola" maydonida quyidagi sarlavhalarning BARCHASI aynan shu tartibda bo'lsin:
+## G'oya qisqacha
+## Kimga sotasiz
+## Boshlang'ich budjet
+## Daromad modeli
+## 7 kunlik bozor sinovi
+## Birinchi sotuv uchun qadamlar
+## Xavflar va ularni kamaytirish
+## Keyingi qadam
+
+Budjetni so'mda realistik oraliq bilan, daromad modelini oddiy hisob-kitob
+misoli bilan ko'rsat. Katta sarmoya qilishdan oldin talabni arzon usulda
+tekshirishga urg'u ber. Kafolatlangan daromad va asossiz va'dalar yozma."""
+
+
 def _generate_with_gemini(topic: str) -> dict:
     if not GEMINI_API_KEY:
         raise RuntimeError("GEMINI_API_KEY sozlanmagan")
@@ -124,7 +229,7 @@ def _generate_with_gemini(topic: str) -> dict:
     )
     payload = {
         "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
-        "contents": [{"role": "user", "parts": [{"text": f"Mavzu: {topic}"}]}],
+        "contents": [{"role": "user", "parts": [{"text": _user_prompt(topic)}]}],
         "generationConfig": {
             "responseMimeType": "application/json",
             "responseSchema": LESSON_SCHEMA,
@@ -171,7 +276,7 @@ def _generate_with_vertex(topic: str) -> dict:
     )
     payload = {
         "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
-        "contents": [{"role": "user", "parts": [{"text": f"Mavzu: {topic}"}]}],
+        "contents": [{"role": "user", "parts": [{"text": _user_prompt(topic)}]}],
         "generationConfig": {
             "responseMimeType": "application/json",
             "responseSchema": LESSON_SCHEMA,
@@ -206,7 +311,7 @@ def _generate_with_claude(topic: str) -> dict:
             "cache_control": {"type": "ephemeral"},
         }],
         output_config={"format": {"type": "json_schema", "schema": LESSON_SCHEMA}},
-        messages=[{"role": "user", "content": f"Mavzu: {topic}"}],
+        messages=[{"role": "user", "content": _user_prompt(topic)}],
     )
     if response.stop_reason == "refusal":
         raise RuntimeError("Model darsdan bosh tortdi (refusal)")
@@ -237,5 +342,9 @@ def generate_lesson(topic: str) -> dict:
         result = _generate_with_vertex(topic)
     else:
         result = _generate_with_gemini(topic)
-    result["teglar"] = _clean_tags(result.get("teglar"))
+    generated_tags = _clean_tags(result.get("teglar"))
+    required_tags = IDEA_TOPIC_TAGS.get(topic, [])
+    # G'oya filtrlari model javobiga bog'liq bo'lmasin; tartibni saqlab,
+    # takrorlarni olib tashlaymiz.
+    result["teglar"] = list(dict.fromkeys([*required_tags, *generated_tags]))[:6]
     return result

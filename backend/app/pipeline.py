@@ -21,7 +21,7 @@ from .config import AUTO_PUBLISH, AUTO_TELEGRAM, TELEGRAM_BOT_TOKEN
 from .database import Base, SessionLocal, engine
 from .models import Article, Category
 from .seed import prune_legacy_content, seed_categories
-from .services.education import LESSON_TOPICS, generate_lesson
+from .services.education import IDEA_TOPICS, LESSON_TOPICS, generate_lesson
 from .services.telegram import send_to_channel
 from .utils import slugify
 
@@ -88,8 +88,14 @@ def run_pipeline(per_feed: int = 0) -> int:
             print("✅ Kurikulumdagi barcha mavzular yoritilgan — yangi dars yaratilmadi.")
             return 0
 
-        random.shuffle(remaining)
-        batch = remaining[:LESSON_BATCH_PER_RUN]
+        # Yangi "Biznes g'oyalari" bo'limini avval foydali kontent bilan
+        # to'ldiramiz. Har ikki guruh ichida tasodifiylik saqlanadi.
+        idea_topics = set(IDEA_TOPICS)
+        idea_remaining = [item for item in remaining if item[1] in idea_topics]
+        other_remaining = [item for item in remaining if item[1] not in idea_topics]
+        random.shuffle(idea_remaining)
+        random.shuffle(other_remaining)
+        batch = (idea_remaining + other_remaining)[:LESSON_BATCH_PER_RUN]
         print(f"📚 {len(remaining)} ta mavzu qoldi. Shu safar {len(batch)} ta dars yaratiladi.")
 
         for section_slug, topic in batch:

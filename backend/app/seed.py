@@ -5,6 +5,7 @@ from .models import Article, Category
 # Biznes darslari kurikulumi bo'limlari (yangilik kategoriyalari emas).
 # Sluglar education.py dagi LESSON_TOPICS bilan mos bo'lishi shart.
 CATEGORIES = [
+    ("Biznes g'oyalari", "biznes-goyalari"),
     ("Biznesni boshlash", "biznesni-boshlash"),
     ("Moliya va hisob", "moliya"),
     ("Marketing va sotuv", "marketing-sotuv"),

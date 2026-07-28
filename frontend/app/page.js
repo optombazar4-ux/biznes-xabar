@@ -4,6 +4,7 @@ import { apiGet } from "../lib/api";
 
 // Har bir kurikulum bo'limi uchun ikonka
 const SECTION_ICONS = {
+  "biznes-goyalari": "💡",
   "biznesni-boshlash": "🚀",
   moliya: "💰",
   "marketing-sotuv": "📣",
@@ -14,6 +15,7 @@ const SECTION_ICONS = {
 
 // Foydalanuvchi turini tanlash — maqsadga qarab tegishli bo'limga yo'naltiradi
 const USER_GOALS = [
+  { label: "Menga biznes g'oya kerak", emoji: "💡", slug: "biznes-goyalari" },
   { label: "Biznes boshlamoqchiman", emoji: "🚀", slug: "biznesni-boshlash" },
   { label: "Sotuvni oshirmoqchiman", emoji: "📣", slug: "marketing-sotuv" },
   { label: "Moliyani tartibga solmoqchiman", emoji: "💰", slug: "moliya" },
@@ -50,7 +52,7 @@ export default async function HomePage() {
       {/* Foydalanuvchi maqsadi */}
       <section className="mb-10">
         <p className="mb-3 text-center text-sm text-slate-400">Nimadan boshlaymiz?</p>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {USER_GOALS.map((goal) => (
             <Link
               key={goal.slug}
