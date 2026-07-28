@@ -38,6 +38,14 @@ services:
         value: "4"
       - key: PIPELINE_INTERVAL
         value: "3600"
+      - key: RSS_IDEA_ENABLED
+        value: "true"
+      - key: RSS_IDEA_INTERVAL_DAYS
+        value: "7"
+      - key: RSS_IDEA_SUGGESTIONS_PER_BATCH
+        value: "8"
+      - key: RSS_FEED_ITEMS_PER_SOURCE
+        value: "5"
       - key: RUN_BACKGROUND_SERVICES
         value: "true"
       - key: FRONTEND_ORIGIN

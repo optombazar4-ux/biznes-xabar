@@ -3,14 +3,28 @@
 // Tashqi kutubxonasiz (server komponentida ishlaydi).
 
 function renderInline(text, keyPrefix) {
-  // **qalin** matnni <strong> ga aylantiradi
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  // **qalin** matn va faqat xavfsiz http(s) markdown havolalarini render qiladi.
+  const parts = text.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\(https?:\/\/[^)\s]+\))/g);
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
         <strong key={`${keyPrefix}-${i}`} className="font-semibold text-white">
           {part.slice(2, -2)}
         </strong>
+      );
+    }
+    const link = part.match(/^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/);
+    if (link) {
+      return (
+        <a
+          key={`${keyPrefix}-${i}`}
+          href={link[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-amber-400 underline hover:text-amber-300"
+        >
+          {link[1]}
+        </a>
       );
     }
     return part;

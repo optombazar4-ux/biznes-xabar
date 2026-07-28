@@ -47,3 +47,41 @@ class Article(Base):
     source_published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class IdeaProposal(Base):
+    """RSS trendlari asosida AI taklif qilgan biznes g'oyasi auditi."""
+
+    __tablename__ = "idea_proposals"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(500), unique=True, index=True)
+    filters: Mapped[list] = mapped_column(JSON, default=list)
+    source_urls: Mapped[list] = mapped_column(JSON, default=list)
+    source_names: Mapped[list] = mapped_column(JSON, default=list)
+    source_titles: Mapped[list] = mapped_column(JSON, default=list)
+    rationale: Mapped[str] = mapped_column(Text, default="")
+    estimated_budget_min: Mapped[int] = mapped_column(Integer, default=0)
+    estimated_budget_max: Mapped[int] = mapped_column(Integer, default=0)
+    risks: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(20), default="approved", index=True)
+    validation_notes: Mapped[str] = mapped_column(Text, default="")
+    article_id: Mapped[int | None] = mapped_column(
+        ForeignKey("articles.id"), nullable=True, unique=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class IdeaProposalRun(Base):
+    """Haftalik taklif siklining holati va hisoboti."""
+
+    __tablename__ = "idea_proposal_runs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    signals_count: Mapped[int] = mapped_column(Integer, default=0)
+    suggestions_count: Mapped[int] = mapped_column(Integer, default=0)
+    approved_count: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(String(20), default="running", index=True)
+    error: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

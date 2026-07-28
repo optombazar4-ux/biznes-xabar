@@ -15,11 +15,12 @@ from .config import (
     validate_production_settings,
 )
 from .database import Base, SessionLocal, engine
-from .models import Article
+from .models import Article, IdeaProposal, IdeaProposalRun
 from .routers import admin, categories, news
 from .seed import prune_legacy_content, seed_categories
 from .pipeline import run_pipeline
 from .bot.bot import main as run_bot
+from .services.education import IDEA_TOPICS
 
 PIPELINE_STATE = {
     "status": "not_started",
@@ -128,11 +129,40 @@ def health():
     db = SessionLocal()
     try:
         latest = db.query(Article).order_by(Article.created_at.desc()).first()
+        latest_proposal_run = (
+            db.query(IdeaProposalRun)
+            .order_by(IdeaProposalRun.created_at.desc())
+            .first()
+        )
         return {
             "status": "ok",
             "database": "ok",
             "latest_article_at": latest.created_at if latest else None,
             "pipeline": PIPELINE_STATE,
+            "idea_pipeline": {
+                "curated_total": len(IDEA_TOPICS),
+                "curated_published": (
+                    db.query(Article)
+                    .filter(Article.original_title.in_(IDEA_TOPICS))
+                    .count()
+                ),
+                "approved_queue": (
+                    db.query(IdeaProposal)
+                    .filter(IdeaProposal.status == "approved")
+                    .count()
+                ),
+                "latest_weekly_run": (
+                    {
+                        "status": latest_proposal_run.status,
+                        "signals": latest_proposal_run.signals_count,
+                        "suggestions": latest_proposal_run.suggestions_count,
+                        "approved": latest_proposal_run.approved_count,
+                        "created_at": latest_proposal_run.created_at,
+                    }
+                    if latest_proposal_run
+                    else None
+                ),
+            },
         }
     finally:
         db.close()
