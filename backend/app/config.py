@@ -10,13 +10,36 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./biznesxabar.db")
 AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini").strip().lower()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+
+# Render kabi Google Cloud'dan tashqaridagi serverlar uchun Vertex AI + ADC.
+GOOGLE_CLOUD_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT", "")
+GOOGLE_CLOUD_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "global")
+VERTEX_GEMINI_MODEL = os.getenv("VERTEX_GEMINI_MODEL", "gemini-2.5-flash-lite")
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-opus-4-8")
 
 # Admin panelga kirish uchun maxfiy token (X-Admin-Token sarlavhasi orqali).
-ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "admin-token-o'zgartiring")
+ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
+UNSAFE_ADMIN_TOKENS = {
+    "admin-token-o'zgartiring",
+    "maxfiy-admin-token",
+    "bu-yerga-kuchli-tasodifiy-token-kiriting",
+}
+
+
+def admin_is_configured() -> bool:
+    return len(ADMIN_TOKEN) >= 32 and ADMIN_TOKEN not in UNSAFE_ADMIN_TOKENS
+
+
+def validate_production_settings() -> None:
+    """Xavfli admin token haqida ogohlantiradi; public API'ni yiqitmaydi."""
+    if not admin_is_configured():
+        print(
+            "OGOHLANTIRISH: ADMIN_TOKEN xavfsiz sozlanmagan. "
+            "Admin endpointlari yangi kuchli token berilguncha bloklandi."
+        )
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHANNEL_ID = os.getenv("TELEGRAM_CHANNEL_ID", "")  # masalan: @biznesxabari
@@ -24,6 +47,11 @@ TELEGRAM_CHANNEL_ID = os.getenv("TELEGRAM_CHANNEL_ID", "")  # masalan: @biznesxa
 
 def _bool(name: str, default: str) -> bool:
     return os.getenv(name, default).strip().lower() in ("1", "true", "yes", "ha")
+
+
+# Render'dagi yagona web service pipeline va botni API jarayonida ishlatadi.
+# Docker Compose'da ular alohida servis bo'lgani uchun false beriladi.
+RUN_BACKGROUND_SERVICES = _bool("RUN_BACKGROUND_SERVICES", "true")
 
 
 # Avto-chop etish: pipeline maqolalarni admin tasdig'isiz to'g'ridan-to'g'ri

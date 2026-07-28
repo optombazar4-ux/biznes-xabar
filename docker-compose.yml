@@ -31,14 +31,19 @@ services:
       DATABASE_URL: postgresql+psycopg2://biznesxabar:${POSTGRES_PASSWORD:-biznesxabar_parol}@db:5432/biznesxabar
       AI_PROVIDER: ${AI_PROVIDER:-gemini}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-}
+      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-}
+      GOOGLE_CLOUD_LOCATION: ${GOOGLE_CLOUD_LOCATION:-global}
+      VERTEX_GEMINI_MODEL: ${VERTEX_GEMINI_MODEL:-gemini-2.5-flash-lite}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      ADMIN_TOKEN: ${ADMIN_TOKEN:-admin-token-o'zgartiring}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:?ADMIN_TOKEN .env faylida sozlanishi shart}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_CHANNEL_ID: ${TELEGRAM_CHANNEL_ID:-}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
       MEDIA_DIR: /app/media
       BACKEND_PUBLIC_URL: ${BACKEND_PUBLIC_URL:-http://localhost:8000}
+      RUN_BACKGROUND_SERVICES: "false"
     volumes:
       - media:/app/media
     ports:
@@ -46,6 +51,18 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
     restart: unless-stopped
 
   pipeline:
@@ -60,7 +77,11 @@ services:
       DATABASE_URL: postgresql+psycopg2://biznesxabar:${POSTGRES_PASSWORD:-biznesxabar_parol}@db:5432/biznesxabar
       AI_PROVIDER: ${AI_PROVIDER:-gemini}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-}
+      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-}
+      GOOGLE_CLOUD_LOCATION: ${GOOGLE_CLOUD_LOCATION:-global}
+      VERTEX_GEMINI_MODEL: ${VERTEX_GEMINI_MODEL:-gemini-2.5-flash-lite}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_CHANNEL_ID: ${TELEGRAM_CHANNEL_ID:-}
@@ -93,7 +114,8 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
 
   bot:
@@ -106,7 +128,8 @@ services:
     volumes:
       - botdata:/app/data
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

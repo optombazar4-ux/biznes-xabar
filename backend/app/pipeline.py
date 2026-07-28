@@ -74,6 +74,7 @@ def run_pipeline(per_feed: int = 0) -> int:
     Base.metadata.create_all(engine)
     db = SessionLocal()
     created = 0
+    generation_errors = 0
     try:
         seed_categories(db)
         prune_legacy_content(db)
@@ -94,6 +95,7 @@ def run_pipeline(per_feed: int = 0) -> int:
         for section_slug, topic in batch:
             article = _create_lesson(db, categories, section_slug, topic)
             if not article:
+                generation_errors += 1
                 continue
             created += 1
 
@@ -105,6 +107,9 @@ def run_pipeline(per_feed: int = 0) -> int:
                     print("   ✓ Telegram kanalga yuborildi")
                 except Exception as error:
                     print(f"   ✗ Telegram xatosi: {error}")
+
+        if batch and created == 0 and generation_errors == len(batch):
+            raise RuntimeError("Barcha yangi darslar AI generatsiyasida xatoga uchradi")
 
         print(f"\n✅ {created} ta yangi dars yaratildi.")
         return created

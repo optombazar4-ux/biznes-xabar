@@ -12,3 +12,8 @@ out/
 # Muhit fayllari va lokal bazalar
 .env
 *.db
+
+# Google Cloud service-account maxfiy fayllari
+*-sa.json
+*service-account*.json
+google-credentials*.json

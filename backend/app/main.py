@@ -1,32 +1,53 @@
 import asyncio
 import os
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from .config import FRONTEND_ORIGIN, MEDIA_DIR
+from .config import (
+    FRONTEND_ORIGIN,
+    MEDIA_DIR,
+    RUN_BACKGROUND_SERVICES,
+    validate_production_settings,
+)
 from .database import Base, SessionLocal, engine
+from .models import Article
 from .routers import admin, categories, news
 from .seed import prune_legacy_content, seed_categories
 from .pipeline import run_pipeline
 from .bot.bot import main as run_bot
 
+PIPELINE_STATE = {
+    "status": "not_started",
+    "last_started_at": None,
+    "last_completed_at": None,
+    "last_error_at": None,
+    "last_saved": None,
+}
+
 
 async def pipeline_loop_task():
-    # Wait for the server to spin up fully
     await asyncio.sleep(15)
     while True:
+        PIPELINE_STATE["status"] = "running"
+        PIPELINE_STATE["last_started_at"] = datetime.now(timezone.utc).isoformat()
         try:
             print("⏳ Running background lessons pipeline...")
             loop = asyncio.get_running_loop()
             saved = await loop.run_in_executor(None, run_pipeline)
+            PIPELINE_STATE["status"] = "ok"
+            PIPELINE_STATE["last_completed_at"] = datetime.now(timezone.utc).isoformat()
+            PIPELINE_STATE["last_saved"] = saved
             print(f"✅ Pipeline done. Created {saved} lessons.")
         except Exception as e:
+            PIPELINE_STATE["status"] = "error"
+            PIPELINE_STATE["last_error_at"] = datetime.now(timezone.utc).isoformat()
             print(f"❌ Pipeline loop error: {e}")
-        
+
         interval = int(os.getenv("PIPELINE_INTERVAL", "3600"))
         await asyncio.sleep(interval)
 
@@ -42,6 +63,7 @@ async def bot_task():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    validate_production_settings()
     Base.metadata.create_all(engine)
     db = SessionLocal()
     try:
@@ -51,15 +73,12 @@ async def lifespan(app: FastAPI):
         db.close()
     
     bg_tasks = []
-    
-    # Start pipeline
-    bg_tasks.append(asyncio.create_task(pipeline_loop_task()))
-    
-    # Start bot if token exists
-    if os.getenv("TELEGRAM_BOT_TOKEN"):
-        bg_tasks.append(asyncio.create_task(bot_task()))
-    else:
-        print("⚠️ TELEGRAM_BOT_TOKEN is not set. Bot background task will not start.")
+    if RUN_BACKGROUND_SERVICES:
+        bg_tasks.append(asyncio.create_task(pipeline_loop_task()))
+        if os.getenv("TELEGRAM_BOT_TOKEN"):
+            bg_tasks.append(asyncio.create_task(bot_task()))
+        else:
+            print("⚠️ TELEGRAM_BOT_TOKEN is not set. Bot background task will not start.")
         
     yield
     
@@ -102,3 +121,18 @@ app.mount("/media", StaticFiles(directory=MEDIA_DIR), name="media")
 @app.get("/")
 def root():
     return {"loyiha": "Biznes Darslari", "hujjatlar": "/docs"}
+
+
+@app.get("/health")
+def health():
+    db = SessionLocal()
+    try:
+        latest = db.query(Article).order_by(Article.created_at.desc()).first()
+        return {
+            "status": "ok",
+            "database": "ok",
+            "latest_article_at": latest.created_at if latest else None,
+            "pipeline": PIPELINE_STATE,
+        }
+    finally:
+        db.close()

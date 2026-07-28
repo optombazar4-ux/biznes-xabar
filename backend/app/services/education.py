@@ -18,6 +18,9 @@ from ..config import (
     CLAUDE_MODEL,
     GEMINI_API_KEY,
     GEMINI_MODEL,
+    GOOGLE_CLOUD_LOCATION,
+    GOOGLE_CLOUD_PROJECT,
+    VERTEX_GEMINI_MODEL,
 )
 
 # Kurikulum: (bo'lim_slug, mavzu). Bo'lim sluglari seed.py bilan mos bo'lishi shart.
@@ -138,6 +141,58 @@ def _generate_with_gemini(topic: str) -> dict:
     return json.loads(text)
 
 
+_vertex_credentials = None
+_vertex_project = ""
+
+
+def _generate_with_vertex(topic: str) -> dict:
+    """Vertex AI generateContent — ADC/service account bilan server autentifikatsiyasi."""
+    global _vertex_credentials, _vertex_project
+
+    import google.auth
+    from google.auth.transport.requests import Request
+
+    if _vertex_credentials is None:
+        _vertex_credentials, detected_project = google.auth.default(
+            scopes=["https://www.googleapis.com/auth/cloud-platform"]
+        )
+        _vertex_project = GOOGLE_CLOUD_PROJECT or detected_project or ""
+
+    if not _vertex_project:
+        raise RuntimeError("GOOGLE_CLOUD_PROJECT aniqlanmadi")
+
+    if not _vertex_credentials.valid:
+        _vertex_credentials.refresh(Request())
+
+    url = (
+        "https://aiplatform.googleapis.com/v1/projects/"
+        f"{_vertex_project}/locations/{GOOGLE_CLOUD_LOCATION}/publishers/google/models/"
+        f"{VERTEX_GEMINI_MODEL}:generateContent"
+    )
+    payload = {
+        "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+        "contents": [{"role": "user", "parts": [{"text": f"Mavzu: {topic}"}]}],
+        "generationConfig": {
+            "responseMimeType": "application/json",
+            "responseSchema": LESSON_SCHEMA,
+            "maxOutputTokens": 8192,
+        },
+    }
+    response = httpx.post(
+        url,
+        json=payload,
+        headers={"Authorization": f"Bearer {_vertex_credentials.token}"},
+        timeout=120,
+    )
+    if response.status_code != 200:
+        raise RuntimeError(
+            f"Vertex AI xatosi {response.status_code}: {response.text[:300]}"
+        )
+    data = response.json()
+    text = data["candidates"][0]["content"]["parts"][0]["text"]
+    return json.loads(text)
+
+
 def _generate_with_claude(topic: str) -> dict:
     import anthropic  # ixtiyoriy provayder — faqat kerak bo'lganda import qilinadi
 
@@ -178,6 +233,8 @@ def generate_lesson(topic: str) -> dict:
     """Bitta biznes darsi maqolasini yaratadi."""
     if AI_PROVIDER == "claude":
         result = _generate_with_claude(topic)
+    elif AI_PROVIDER == "vertex":
+        result = _generate_with_vertex(topic)
     else:
         result = _generate_with_gemini(topic)
     result["teglar"] = _clean_tags(result.get("teglar"))
