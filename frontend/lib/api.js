@@ -20,4 +20,19 @@ export async function apiGet(path, params = {}) {
   }
 }
 
+export async function apiPost(path, body = {}) {
+  const url = `${API_URL}${path}`;
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 export { API_URL };
