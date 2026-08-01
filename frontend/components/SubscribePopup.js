@@ -1,17 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiPost } from "../lib/api";
 
 const STORAGE_KEY = "biznesxabar_popup_closed_at";
-const SHOW_DELAY_MS = 10_000; // 10 soniyadan keyin chiqadi
-const COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000; // yopilgach 3 kun ko'rinmaydi
+const SHOW_DELAY_MS = 8_000;
+const COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000;
 
 export default function SubscribePopup() {
   const [visible, setVisible] = useState(false);
   const [installEvent, setInstallEvent] = useState(null);
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState("");
 
   useEffect(() => {
-    // PWA sifatida ochilgan bo'lsa popup kerak emas
     if (window.matchMedia("(display-mode: standalone)").matches) return;
 
     const closedAt = Number(localStorage.getItem(STORAGE_KEY) || 0);
@@ -33,6 +36,22 @@ export default function SubscribePopup() {
   const close = () => {
     localStorage.setItem(STORAGE_KEY, String(Date.now()));
     setVisible(false);
+  };
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    if (!email || !email.includes("@")) return;
+    setLoading(true);
+    setMsg("");
+    try {
+      const res = await apiPost("/api/news/subscribe", { email });
+      setMsg(res?.xabar || "Obuna qilindi!");
+      setTimeout(close, 2500);
+    } catch {
+      setMsg("Xatolik yuz berdi. Qayta urinib ko'ring.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const install = async () => {
@@ -57,30 +76,49 @@ export default function SubscribePopup() {
         </button>
 
         <div className="mb-2 flex items-center gap-2">
-          <img src="/logo.svg" alt="Biznes Darslari" width={36} height={36} />
-          <p className="font-bold">Yangi biznes darslaridan xabardor bo&apos;ling!</p>
+          <span className="text-2xl">📩</span>
+          <p className="font-bold">Yangi darslardan xabardor bo&apos;ling!</p>
         </div>
-        <p className="mb-4 text-sm text-slate-400">
-          O&apos;zbekistonda biznes ochish va yuritish bo&apos;yicha amaliy darslar — o&apos;zbek
-          tilida. Telegram kanalimizga obuna bo&apos;ling.
+        <p className="mb-3 text-xs leading-relaxed text-slate-400">
+          Haftalik eng muhim biznes darslari va tayyor g&apos;oyalarni emailingizga oling:
         </p>
 
-        <div className="flex flex-wrap gap-2">
+        <form onSubmit={handleSubscribe} className="mb-3 flex flex-col gap-2">
+          <input
+            type="email"
+            required
+            placeholder="Email manzilingiz (masalan: ali@gmail.com)"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-lg bg-amber-500 py-2 text-xs font-bold text-slate-950 hover:bg-amber-400"
+          >
+            {loading ? "Yuborilmoqda..." : " Obuna bo'lish"}
+          </button>
+        </form>
+
+        {msg && <p className="mb-3 text-xs font-medium text-amber-400">{msg}</p>}
+
+        <div className="flex flex-wrap items-center gap-2 border-t border-slate-800 pt-3">
           <a
             href="https://t.me/biznesxabari"
             target="_blank"
             rel="noopener noreferrer"
             onClick={close}
-            className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-400"
+            className="rounded-lg bg-sky-600/80 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-500"
           >
-            📢 Kanalga obuna bo&apos;lish
+            📢 Telegram kanal
           </a>
           {installEvent && (
             <button
               onClick={install}
-              className="rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 hover:border-amber-500 hover:text-white"
+              className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:border-amber-500 hover:text-white"
             >
-              📲 Ilovani o&apos;rnatish
+              📲 PWA o&apos;rnatish
             </button>
           )}
         </div>

@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { permanentRedirect } from "next/navigation";
+import LessonQuiz from "../../../components/LessonQuiz";
 import MarkdownContent from "../../../components/MarkdownContent";
 import MarkRead from "../../../components/MarkRead";
+
 import { apiGet } from "../../../lib/api";
 import { SITE_URL, SITE_NAME } from "../../../lib/site";
 import { readingMinutes, levelForCategory, formatDate } from "../../../lib/lesson";
@@ -158,6 +160,10 @@ export default async function LessonPage({ params }) {
           <p className="text-slate-200">{article.practical_note}</p>
         </div>
       )}
+
+      {/* Interaktiv Quiz */}
+      <LessonQuiz quiz={article.quiz} />
+
 
       <div className="mb-6 flex flex-wrap gap-2">
         {(article.tags || []).map((tag) => (

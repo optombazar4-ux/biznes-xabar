@@ -92,7 +92,9 @@ def _create_lesson(db, categories, section_slug: str, topic: str) -> Article | N
         content=lesson["maqola"],
         practical_note=lesson["amaliy_ahamiyat"],
         tags=lesson["teglar"],
+        quiz=lesson.get("quiz", []),
         importance=3,
+
         original_title=topic,  # mavzu — takrorlanmaslik uchun kalit
         original_url=f"internal://dars/{slug}",
         source_name="Biznes Darslari",
@@ -167,7 +169,9 @@ def _create_dynamic_idea(
         content=f"{lesson['maqola']}{_source_notes(proposal)}",
         practical_note=lesson["amaliy_ahamiyat"],
         tags=lesson["teglar"],
+        quiz=lesson.get("quiz", []),
         importance=4,
+
         original_title=proposal.title,
         original_url=f"internal://dars/ai-goya-{proposal.id}-{slug}",
         source_name=(

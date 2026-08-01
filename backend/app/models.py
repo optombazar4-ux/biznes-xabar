@@ -29,6 +29,7 @@ class Article(Base):
     content: Mapped[str] = mapped_column(Text, default="")           # to'liq maqola
     practical_note: Mapped[str] = mapped_column(Text, default="")    # "Bu nima degani?"
     tags: Mapped[list] = mapped_column(JSON, default=list)
+    quiz: Mapped[list] = mapped_column(JSON, default=list)           # 3 ta interaktiv test savoli
     importance: Mapped[int] = mapped_column(Integer, default=3)      # 1-5
 
     # Asl manba
@@ -46,6 +47,17 @@ class Article(Base):
 
     source_published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class Subscription(Base):
+    """Email obunachilar jadvali."""
+
+    __tablename__ = "subscriptions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 

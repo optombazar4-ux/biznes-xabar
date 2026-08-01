@@ -1,18 +1,39 @@
-"""Admin API — tasdiqlash, tahrirlash, o'chirish, Telegramga yuborish, statistika.
-Barcha so'rovlar X-Admin-Token sarlavhasini talab qiladi."""
-
+import secrets
 from datetime import datetime
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from ..config import ADMIN_TOKEN, admin_is_configured
 from ..database import get_db
 from ..deps import require_admin
 from ..models import Article, Category
 from ..schemas import ArticleOut, ArticleUpdate, StatsOut
+from ..security import create_access_token
 from ..services.telegram import send_to_channel
 
-router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_admin)])
+router = APIRouter(prefix="/api/admin", tags=["admin"])
+protected = APIRouter(dependencies=[Depends(require_admin)])
+
+
+@router.post("/login")
+def admin_login(payload: dict = Body(...)):
+    """Admin token/parol bilan kirib JWT access_token olish."""
+    token = payload.get("token") or payload.get("password", "")
+    if not admin_is_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="Admin panel xavfsiz token sozlanguncha o'chirilgan",
+        )
+    if not secrets.compare_digest(token, ADMIN_TOKEN):
+        raise HTTPException(status_code=401, detail="Noto'g'ri admin token yoki parol")
+
+    access_token = create_access_token(data={"sub": "admin", "role": "admin"})
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "expires_in": 86400,
+    }
 
 
 def get_article(db: Session, article_id: int) -> Article:
@@ -22,7 +43,7 @@ def get_article(db: Session, article_id: int) -> Article:
     return article
 
 
-@router.get("/articles", response_model=list[ArticleOut])
+@protected.get("/articles", response_model=list[ArticleOut])
 def list_articles(db: Session = Depends(get_db), status: str | None = None, limit: int = 50, offset: int = 0):
     query = db.query(Article)
     if status:
@@ -30,7 +51,7 @@ def list_articles(db: Session = Depends(get_db), status: str | None = None, limi
     return query.order_by(Article.created_at.desc()).offset(offset).limit(limit).all()
 
 
-@router.put("/articles/{article_id}", response_model=ArticleOut)
+@protected.put("/articles/{article_id}", response_model=ArticleOut)
 def update_article(article_id: int, data: ArticleUpdate, db: Session = Depends(get_db)):
     article = get_article(db, article_id)
     for field, value in data.model_dump(exclude_unset=True).items():
@@ -40,7 +61,7 @@ def update_article(article_id: int, data: ArticleUpdate, db: Session = Depends(g
     return article
 
 
-@router.post("/articles/{article_id}/approve", response_model=ArticleOut)
+@protected.post("/articles/{article_id}/approve", response_model=ArticleOut)
 def approve_article(article_id: int, db: Session = Depends(get_db)):
     """Maqolani tasdiqlash — saytga chiqariladi."""
     article = get_article(db, article_id)
@@ -51,7 +72,7 @@ def approve_article(article_id: int, db: Session = Depends(get_db)):
     return article
 
 
-@router.post("/articles/{article_id}/reject", response_model=ArticleOut)
+@protected.post("/articles/{article_id}/reject", response_model=ArticleOut)
 def reject_article(article_id: int, db: Session = Depends(get_db)):
     article = get_article(db, article_id)
     article.status = "rejected"
@@ -60,7 +81,7 @@ def reject_article(article_id: int, db: Session = Depends(get_db)):
     return article
 
 
-@router.post("/articles/{article_id}/telegram")
+@protected.post("/articles/{article_id}/telegram")
 def send_article_to_telegram(article_id: int, background: BackgroundTasks, db: Session = Depends(get_db)):
     """Maqolani Telegram kanaliga yuborish."""
     article = get_article(db, article_id)
@@ -73,7 +94,7 @@ def send_article_to_telegram(article_id: int, background: BackgroundTasks, db: S
     return {"ok": True, "xabar": "Telegram kanaliga yuborildi"}
 
 
-@router.delete("/articles/{article_id}")
+@protected.delete("/articles/{article_id}")
 def delete_article(article_id: int, db: Session = Depends(get_db)):
     article = get_article(db, article_id)
     db.delete(article)
@@ -81,7 +102,7 @@ def delete_article(article_id: int, db: Session = Depends(get_db)):
     return {"ok": True}
 
 
-@router.get("/stats", response_model=StatsOut)
+@protected.get("/stats", response_model=StatsOut)
 def stats(db: Session = Depends(get_db)):
     by_category = {}
     for category in db.query(Category).all():
@@ -99,3 +120,7 @@ def stats(db: Session = Depends(get_db)):
         telegramga_yuborilgan=db.query(Article).filter(Article.sent_to_telegram.is_(True)).count(),
         kategoriyalar_boyicha=by_category,
     )
+
+
+router.include_router(protected)
+

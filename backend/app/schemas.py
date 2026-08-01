@@ -1,6 +1,5 @@
 from datetime import datetime
-
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class CategoryOut(BaseModel):
@@ -22,7 +21,9 @@ class ArticleOut(BaseModel):
     content: str
     practical_note: str
     tags: list
+    quiz: list | None = None
     importance: int
+
     original_url: str
     source_name: str
     image_url: str | None
@@ -40,9 +41,23 @@ class ArticleUpdate(BaseModel):
     content: str | None = None
     practical_note: str | None = None
     tags: list | None = None
+    quiz: list | None = None
     importance: int | None = None
     category_id: int | None = None
     image_url: str | None = None
+
+
+class SubscribeIn(BaseModel):
+    email: EmailStr
+
+
+class SubscriptionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    email: str
+    is_active: bool
+    created_at: datetime
 
 
 class StatsOut(BaseModel):

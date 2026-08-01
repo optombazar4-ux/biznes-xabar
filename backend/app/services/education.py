@@ -292,8 +292,9 @@ SYSTEM_PROMPT = """**Rol:** Sen tajribali o'zbek biznes-murabbiysan. O'zbekiston
 5. **SEO:** "seo_sarlavha" maydonida qidiruv uchun optimallashtirilgan sarlavha yoz (60-70 belgi).
 6. **Sarlavha:** "sarlavha" maydonida jalb qiluvchi, aniq o'zbekcha sarlavha ber.
 7. **Teglar:** "teglar" maydonida 3-6 ta mavzuga oid teg.
-8. **Til:** DOIM lotin alifbosidagi o'zbek tilida yoz.
-9. **Format:** Javobni qat'iy JSON formatida qaytar."""
+9. **Test (Quiz):** "quiz" maydonida ushbu dars kontenti asosida foydalanuvchi bilimini sinovchi 3 ta interaktiv savol tayyorla. Har bir savolda: "question" (savol matni), "options" (4 ta variant), "answer_index" (0..3 oralig'ida to'g'ri javob indeksi) va "explanation" (javobning o'zbekcha qisqa tushuntirishi).
+10. **Til:** DOIM lotin alifbosidagi o'zbek tilida yoz.
+11. **Format:** Javobni qat'iy JSON formatida qaytar."""
 
 LESSON_SCHEMA = {
     "type": "object",
@@ -304,12 +305,26 @@ LESSON_SCHEMA = {
         "maqola": {"type": "string"},
         "amaliy_ahamiyat": {"type": "string"},
         "teglar": {"type": "array", "items": {"type": "string"}},
+        "quiz": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "question": {"type": "string"},
+                    "options": {"type": "array", "items": {"type": "string"}},
+                    "answer_index": {"type": "integer"},
+                    "explanation": {"type": "string"},
+                },
+                "required": ["question", "options", "answer_index", "explanation"],
+            },
+        },
     },
     "required": [
         "sarlavha", "seo_sarlavha", "xulosa",
-        "maqola", "amaliy_ahamiyat", "teglar",
+        "maqola", "amaliy_ahamiyat", "teglar", "quiz",
     ],
 }
+
 
 
 def _idea_prompt(

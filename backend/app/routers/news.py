@@ -3,12 +3,13 @@
 from collections import Counter
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import or_
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Article, Category
-from ..schemas import ArticleOut
+from ..schemas import ArticleOut, SubscribeIn
+
 from ..services.education import LESSON_TOPICS
 
 router = APIRouter(prefix="/api/news", tags=["darslar"])
@@ -62,15 +63,55 @@ def trend_topics(db: Session = Depends(get_db), limit: int = 15):
 
 @router.get("/search", response_model=list[ArticleOut])
 def search_lessons(q: str, db: Session = Depends(get_db), limit: int = Query(default=20, le=100)):
-    """Sarlavha, xulosa va matn bo'yicha qidiruv."""
-    pattern = f"%{q}%"
+    """Sarlavha, xulosa, matn va amaliy ahamiyat bo'yicha takomillashtirilgan qidiruv."""
+    clean_q = q.strip()
+    if not clean_q:
+        return []
+
+    bind = db.get_bind()
+    # 1. PostgreSQL Full-Text Search (FTS)
+    if bind and bind.dialect.name == "postgresql":
+        ts_vector = func.to_tsvector(
+            "simple",
+            func.coalesce(Article.title, "")
+            + " "
+            + func.coalesce(Article.summary, "")
+            + " "
+            + func.coalesce(Article.content, "")
+            + " "
+            + func.coalesce(Article.practical_note, ""),
+        )
+        ts_query = func.websearch_to_tsquery("simple", clean_q)
+        results = (
+            published(db)
+            .filter(ts_vector.op("@@")(ts_query))
+            .order_by(func.ts_rank_cd(ts_vector, ts_query).desc(), Article.published_at.desc())
+            .limit(limit)
+            .all()
+        )
+        if results:
+            return results
+
+    # 2. SQLite / Multi-word Wildcard Fallback
+    keywords = [k for k in clean_q.split() if len(k) > 1]
+    if not keywords:
+        keywords = [clean_q]
+
+    filters = []
+    for kw in keywords:
+        pat = f"%{kw}%"
+        filters.append(
+            or_(
+                Article.title.ilike(pat),
+                Article.summary.ilike(pat),
+                Article.content.ilike(pat),
+                Article.practical_note.ilike(pat),
+            )
+        )
+
     return (
         published(db)
-        .filter(or_(
-            Article.title.ilike(pattern),
-            Article.summary.ilike(pattern),
-            Article.content.ilike(pattern),
-        ))
+        .filter(and_(*filters))
         .order_by(Article.published_at.desc())
         .limit(limit)
         .all()
@@ -127,3 +168,21 @@ def lesson_detail(slug: str, db: Session = Depends(get_db)):
     if not article:
         raise HTTPException(status_code=404, detail="Dars topilmadi")
     return article
+
+
+@router.post("/subscribe")
+def subscribe_newsletter(data: SubscribeIn, db: Session = Depends(get_db)):
+    """Email obunasini ro'yxatdan o'tkazish."""
+    from ..models import Subscription
+    existing = db.query(Subscription).filter(Subscription.email == data.email).first()
+    if existing:
+        if not existing.is_active:
+            existing.is_active = True
+            db.commit()
+        return {"ok": True, "xabar": "Siz allaqachon obuna bo'lgansiz!"}
+
+    sub = Subscription(email=data.email, is_active=True)
+    db.add(sub)
+    db.commit()
+    return {"ok": True, "xabar": "Rahmat! Email obunangiz muvaffaqiyatli qabul qilindi."}
+
