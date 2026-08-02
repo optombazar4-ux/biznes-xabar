@@ -1,13 +1,14 @@
 """O'zbekcha Text-to-Speech (TTS) Audio Generatsiya Servisi.
 
-EdgeTTS (uz-UZ-MadinaNeural) va Gemini 3.1 Flash TTS model (`gemini-3.1-flash-tts-preview`)
-yordamida maqola matnidan ravon o'zbekcha MP3 audio yaratadi hamda /media/audio/ papkasida keshlaydi.
+EdgeTTS (uz-UZ-MadinaNeural), Gemini 3.1 Flash TTS hamda gTTS keshlovchi
+servislaridan foydalanib maqola matnidan ravon MP3 audio yaratadi.
 """
 
 import asyncio
 import os
 import sys
 import urllib.parse
+import concurrent.futures
 from pathlib import Path
 import httpx
 
@@ -16,11 +17,16 @@ if hasattr(sys.stdout, "reconfigure"):
 if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="backslashreplace")
 
-
 from ..config import MEDIA_DIR, BACKEND_PUBLIC_URL, GEMINI_API_KEY, GEMINI_TTS_MODEL
 
 AUDIO_DIR = Path(MEDIA_DIR) / "audio"
 AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+
+
+async def _async_edge_tts_save(text: str, dest_path: str):
+    import edge_tts
+    communicate = edge_tts.Communicate(text, "uz-UZ-MadinaNeural")
+    await communicate.save(dest_path)
 
 
 def generate_article_audio(slug: str, title: str, summary: str, practical_note: str | None = None) -> str:
@@ -37,18 +43,26 @@ def generate_article_audio(slug: str, title: str, summary: str, practical_note: 
     text_to_speak = f"{title}. {summary}"
     if practical_note:
         text_to_speak += f" Bu nima degani? {practical_note}"
-    clean_text = " ".join(text_to_speak.split())[:2000]
+    clean_text = " ".join(text_to_speak.split())[:1500]
 
     # 3. Primary: EdgeTTS O'zbek Tili (uz-UZ-MadinaNeural — juda sifatli va tabiiy ovoz)
     try:
-        import edge_tts
-        communicate = edge_tts.Communicate(clean_text, "uz-UZ-MadinaNeural")
-        asyncio.run(communicate.save(str(filepath)))
+        def _worker():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                loop.run_until_complete(_async_edge_tts_save(clean_text, str(filepath)))
+            finally:
+                loop.close()
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            executor.submit(_worker).result(timeout=20.0)
+
         if filepath.exists() and filepath.stat().st_size > 1000:
             print(f"✅ EdgeTTS (uz-UZ-MadinaNeural) o'zbekcha audio yaratildi: {filename}")
             return public_url
     except Exception as err:
-        print(f"⚠️ EdgeTTS xatosi ({err}), Gemini TTS ga o'tilmoqda...")
+        print(f"⚠️ EdgeTTS xatosi: {err}")
 
     # 4. Secondary: Gemini 3.1 Flash TTS Preview (agar GEMINI_API_KEY bo'lsa)
     if GEMINI_API_KEY:
@@ -59,7 +73,7 @@ def generate_article_audio(slug: str, title: str, summary: str, practical_note: 
                 "contents": [{"parts": [{"text": prompt}]}],
                 "generationConfig": {"responseMimeType": "audio/mp3"}
             }
-            with httpx.Client(timeout=25.0) as client:
+            with httpx.Client(timeout=20.0) as client:
                 resp = client.post(gemini_url, json=payload)
                 if resp.status_code == 200:
                     data = resp.json()
@@ -75,6 +89,17 @@ def generate_article_audio(slug: str, title: str, summary: str, practical_note: 
                                 print(f"✅ Gemini TTS ({GEMINI_TTS_MODEL}) audio yaratildi: {filename}")
                                 return public_url
         except Exception as err:
-            print(f"⚠️ Gemini TTS xatosi ({err})")
+            print(f"⚠️ Gemini TTS xatosi: {err}")
+
+    # 5. Fallback: gTTS
+    try:
+        from gtts import gTTS
+        tts = gTTS(text=clean_text[:600], lang="tr")
+        tts.save(str(filepath))
+        if filepath.exists() and filepath.stat().st_size > 500:
+            print(f"✅ Fallback gTTS audio yaratildi: {filename}")
+            return public_url
+    except Exception as err:
+        print(f"❌ Fallback gTTS xatosi: {err}")
 
     return ""
