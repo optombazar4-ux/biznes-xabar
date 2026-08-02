@@ -69,6 +69,27 @@ async def bot_task():
         print(f"❌ Telegram Bot error: {e}")
 
 
+async def keep_alive_task():
+    """Server va sayt uxlab qolmasligi uchun har 5 daqiqada (300s) avtomatik self-ping yuboradi."""
+    await asyncio.sleep(10)
+    import httpx
+    urls = [
+        f"{BACKEND_PUBLIC_URL.rstrip('/')}/health",
+        FRONTEND_ORIGIN.rstrip("/"),
+    ]
+    print("⚡ Anti-Sleep (Keep-Alive Heartbeat) servisi ishga tushdi.")
+    while True:
+        await asyncio.sleep(300)  # 5 daqiqa
+        for url in urls:
+            if not url or not url.startswith("http"):
+                continue
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    await client.get(url)
+            except Exception:
+                pass
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     validate_production_settings()
@@ -83,6 +104,7 @@ async def lifespan(app: FastAPI):
     bg_tasks = []
     if RUN_BACKGROUND_SERVICES:
         bg_tasks.append(asyncio.create_task(pipeline_loop_task()))
+        bg_tasks.append(asyncio.create_task(keep_alive_task()))
         if os.getenv("TELEGRAM_BOT_TOKEN"):
             bg_tasks.append(asyncio.create_task(bot_task()))
         else:
@@ -94,6 +116,7 @@ async def lifespan(app: FastAPI):
         task.cancel()
     if bg_tasks:
         await asyncio.gather(*bg_tasks, return_exceptions=True)
+
 
 
 app = FastAPI(
