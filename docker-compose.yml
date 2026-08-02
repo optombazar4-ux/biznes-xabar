@@ -4,6 +4,7 @@
 #
 # Servislar:
 #   db        — PostgreSQL 16
+#   redis     — Redis 7 (Kesh)
 #   backend   — FastAPI (http://localhost:8000, hujjatlar: /docs)
 #   pipeline  — AI agent: har PIPELINE_INTERVAL soniyada yangiliklarni yig'adi
 #   frontend  — Next.js sayt (http://localhost:3000)
@@ -25,10 +26,23 @@ services:
       retries: 10
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
   backend:
     build: ./backend
     environment:
       DATABASE_URL: postgresql+psycopg2://biznesxabar:${POSTGRES_PASSWORD:-biznesxabar_parol}@db:5432/biznesxabar
+      REDIS_URL: redis://redis:6379/0
+      ENABLE_REDIS_CACHE: "true"
       AI_PROVIDER: ${AI_PROVIDER:-gemini}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
@@ -50,6 +64,8 @@ services:
       - "8000:8000"
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test:
@@ -75,6 +91,7 @@ services:
       done"
     environment:
       DATABASE_URL: postgresql+psycopg2://biznesxabar:${POSTGRES_PASSWORD:-biznesxabar_parol}@db:5432/biznesxabar
+      REDIS_URL: redis://redis:6379/0
       AI_PROVIDER: ${AI_PROVIDER:-gemini}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
@@ -99,17 +116,16 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
       args:
-        # Brauzer backend'ga shu manzildan kiradi — serverga qo'ysangiz
-        # https://api.sizning-domen.uz kabi qiymat bering
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     environment:
-      # SSR konteyner ichidan backend'ga ichki tarmoq orqali murojaat qiladi
       API_URL_INTERNAL: http://backend:8000
     ports:
       - "3000:3000"

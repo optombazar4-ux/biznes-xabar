@@ -7,10 +7,13 @@ from sqlalchemy.orm import Session
 from ..config import ADMIN_TOKEN, admin_is_configured
 from ..database import get_db
 from ..deps import require_admin
-from ..models import Article, Category
+from ..models import Article, Category, Subscription
 from ..schemas import ArticleOut, ArticleUpdate, StatsOut
 from ..security import create_access_token
 from ..services.telegram import send_to_channel
+from ..services.email import send_email_digest
+from ..cache import invalidate_cache
+
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 protected = APIRouter(dependencies=[Depends(require_admin)])
@@ -58,6 +61,7 @@ def update_article(article_id: int, data: ArticleUpdate, db: Session = Depends(g
         setattr(article, field, value)
     db.commit()
     db.refresh(article)
+    invalidate_cache()
     return article
 
 
@@ -69,6 +73,7 @@ def approve_article(article_id: int, db: Session = Depends(get_db)):
     article.published_at = datetime.utcnow()
     db.commit()
     db.refresh(article)
+    invalidate_cache()
     return article
 
 
@@ -78,6 +83,7 @@ def reject_article(article_id: int, db: Session = Depends(get_db)):
     article.status = "rejected"
     db.commit()
     db.refresh(article)
+    invalidate_cache()
     return article
 
 
@@ -99,10 +105,40 @@ def delete_article(article_id: int, db: Session = Depends(get_db)):
     article = get_article(db, article_id)
     db.delete(article)
     db.commit()
+    invalidate_cache()
     return {"ok": True}
 
 
+
+@protected.post("/send-digest")
+def send_digest(db: Session = Depends(get_db)):
+    """Faol obunachilarga eng so'nggi chop etilgan 5 ta darsdan iborat email dayjest yuboradi."""
+    subs = db.query(Subscription).filter(Subscription.is_active.is_(True)).all()
+    emails = [s.email for s in subs]
+    if not emails:
+        return {"ok": True, "sent_count": 0, "xabar": "Faol obunachilar topilmadi"}
+
+    articles = (
+        db.query(Article)
+        .filter(Article.status == "published")
+        .order_by(Article.published_at.desc())
+        .limit(5)
+        .all()
+    )
+    art_dicts = [
+        {"title": a.title, "summary": a.summary, "slug": a.slug} for a in articles
+    ]
+
+    sent_count = send_email_digest(
+        to_emails=emails,
+        subject="🎓 Biznes Xabar — Eng so'nggi amaliy darslar dayjesti",
+        articles=art_dicts,
+    )
+    return {"ok": True, "sent_count": sent_count, "xabar": f"Dayjest {sent_count} ta obunachiga yuborildi"}
+
+
 @protected.get("/stats", response_model=StatsOut)
+
 def stats(db: Session = Depends(get_db)):
     by_category = {}
     for category in db.query(Category).all():

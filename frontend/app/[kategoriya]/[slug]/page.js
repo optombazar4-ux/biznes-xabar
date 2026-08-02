@@ -3,6 +3,10 @@ import { permanentRedirect } from "next/navigation";
 import LessonQuiz from "../../../components/LessonQuiz";
 import MarkdownContent from "../../../components/MarkdownContent";
 import MarkRead from "../../../components/MarkRead";
+import AudioPlayer from "../../../components/AudioPlayer";
+import TelegramBanner from "../../../components/TelegramBanner";
+
+
 
 import { apiGet } from "../../../lib/api";
 import { SITE_URL, SITE_NAME } from "../../../lib/site";
@@ -117,6 +121,9 @@ export default async function LessonPage({ params }) {
     }
   }
 
+  // Related / o'xshash darslar
+  const related = (await apiGet(`/api/news/${slug}/related`)) || [];
+
   return (
     <article className="mx-auto max-w-3xl py-8">
       <script
@@ -150,7 +157,11 @@ export default async function LessonPage({ params }) {
         {article.summary}
       </p>
 
+      {/* Audio Player — Ovozli tinglash */}
+      <AudioPlayer slug={article.slug} />
+
       <div className="prose-invert mb-6">
+
         <MarkdownContent content={article.content} />
       </div>
 
@@ -192,6 +203,35 @@ export default async function LessonPage({ params }) {
         {date && <span>· Yangilangan: {date}</span>}
       </div>
 
+      {/* Tavsiya etilgan o'xshash darslar */}
+      {related.length > 0 && (
+        <section className="mb-8 border-t border-slate-800 pt-6">
+          <h2 className="mb-4 text-xl font-bold text-slate-100">📌 O'xshash biznes darslari</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {related.map((rel) => {
+              const relCat = rel.category?.slug || catSlug;
+              return (
+                <Link
+                  key={rel.id}
+                  href={`/${relCat}/${rel.slug}`}
+                  className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 transition hover:border-amber-500/50 hover:bg-slate-900"
+                >
+                  <div className="text-xs font-semibold text-amber-400">
+                    {rel.category?.name || "Dars"}
+                  </div>
+                  <h3 className="mt-1 line-clamp-2 text-sm font-semibold text-slate-200">
+                    {rel.title}
+                  </h3>
+                  <p className="mt-1 line-clamp-2 text-xs text-slate-400">
+                    {rel.summary}
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {/* Oldingi / keyingi dars */}
       {(prev || next) && (
         <nav className="mb-6 grid gap-3 sm:grid-cols-2">
@@ -218,7 +258,12 @@ export default async function LessonPage({ params }) {
         </nav>
       )}
 
+
+      {/* Telegram Obuna Banneri */}
+      <TelegramBanner compact={true} />
+
       <div className="flex flex-wrap items-center gap-4 border-t border-slate-800 pt-5 text-sm">
+
         {article.category && (
           <Link
             href={`/${catSlug}`}

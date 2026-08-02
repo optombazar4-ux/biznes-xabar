@@ -93,3 +93,8 @@ BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL", "http://localhost:8000")
 
 # Frontend manzili (CORS uchun)
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
+
+# Redis kesh sozlamalari
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+ENABLE_REDIS_CACHE = _bool("ENABLE_REDIS_CACHE", "true")
+

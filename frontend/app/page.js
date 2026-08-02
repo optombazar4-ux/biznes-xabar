@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ArticleCard from "../components/ArticleCard";
+import TelegramBanner from "../components/TelegramBanner";
 import { apiGet } from "../lib/api";
 
 // Har bir kurikulum bo'limi uchun ikonka
@@ -48,6 +49,10 @@ export default async function HomePage() {
           🎓 Bepul o&apos;rganishni boshlash
         </Link>
       </section>
+
+      {/* Telegram Obuna Banneri */}
+      <TelegramBanner />
+
 
       {/* Foydalanuvchi maqsadi */}
       <section className="mb-10">

@@ -23,12 +23,20 @@ def format_post(article: Article, *, compact: bool = False) -> str:
         article.category.name if article.category else "Biznes darsi",
         80,
     )
+    
+    tags_text = ""
+    if article.tags and isinstance(article.tags, list):
+        hashtags = [f"#{tag.replace(' ', '_').replace('-', '_')}" for tag in article.tags if tag]
+        if hashtags:
+            tags_text = "\n\n" + " ".join(hashtags[:5])
+
     return (
         f"🎓 <b>{html.escape(_truncate(article.title, title_limit))}</b>\n\n"
         f"{html.escape(_truncate(article.summary, summary_limit))}\n\n"
         f"💡 <i>{html.escape(_truncate(article.practical_note, practical_limit))}</i>\n\n"
-        f"📂 {html.escape(category)}"
+        f"📂 {html.escape(category)}{tags_text}"
     )
+
 
 
 def build_reply_markup(article: Article) -> dict:

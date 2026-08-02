@@ -15,8 +15,15 @@ Muntazam ishlashi uchun cron'ga qo'ying, masalan har soatda:
 """
 
 import os
+import sys
 import random
 from datetime import datetime
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="backslashreplace")
+
 
 from sqlalchemy import text
 

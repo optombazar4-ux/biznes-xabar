@@ -9,8 +9,11 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import Article, Category
 from ..schemas import ArticleOut, SubscribeIn
-
+from ..cache import cache_response
 from ..services.education import LESSON_TOPICS
+from ..services.audio import generate_article_audio
+
+
 
 router = APIRouter(prefix="/api/news", tags=["darslar"])
 
@@ -168,6 +171,59 @@ def lesson_detail(slug: str, db: Session = Depends(get_db)):
     if not article:
         raise HTTPException(status_code=404, detail="Dars topilmadi")
     return article
+
+
+@router.get("/{slug}/related", response_model=list[ArticleOut])
+def related_lessons(slug: str, db: Session = Depends(get_db), limit: int = 4):
+    """Mavzuga oid va o'xshash darslarni qaytaradi."""
+    article = published(db).filter(Article.slug == slug).first()
+    if not article:
+        return []
+
+    # 1. Shu kategoriyadagi boshqa maqolalar
+    related = (
+        published(db)
+        .filter(Article.id != article.id)
+        .filter(Article.category_id == article.category_id)
+        .order_by(Article.published_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+    # 2. Agar kategoriya bo'yicha kam bo'lsa, eng so'nggi boshqa maqolalar bilan to'ldiramiz
+    if len(related) < limit:
+        existing_ids = {a.id for a in related} | {article.id}
+        fillers = (
+            published(db)
+            .filter(Article.id.not_in(existing_ids))
+            .order_by(Article.published_at.desc())
+            .limit(limit - len(related))
+            .all()
+        )
+        related.extend(fillers)
+
+    return related
+
+
+@router.get("/{slug}/audio")
+def lesson_audio(slug: str, db: Session = Depends(get_db)):
+    """Dars matnidan O'zbekcha MP3 audio yaratadi va kesh URL qaytaradi."""
+    article = published(db).filter(Article.slug == slug).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Dars topilmadi")
+
+    audio_url = generate_article_audio(
+        slug=article.slug,
+        title=article.title,
+        summary=article.summary,
+        practical_note=article.practical_note,
+    )
+    if not audio_url:
+        raise HTTPException(status_code=500, detail="Audio generatsiyasida xatolik")
+
+    return {"ok": True, "audio_url": audio_url}
+
+
 
 
 @router.post("/subscribe")
