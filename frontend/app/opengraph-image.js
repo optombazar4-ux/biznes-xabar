@@ -50,7 +50,8 @@ export default function OgImage() {
         <div style={{ color: "#94a3b8", fontSize: 30 }}>
           O&apos;zbekistonda biznes ochish va yuritishni o&apos;rganing
         </div>
-        <div style={{ color: "#475569", fontSize: 28 }}>biznesxabar.uz</div>
+        <div style={{ color: "#475569", fontSize: 28 }}>biznesdarslari.uz</div>
+
       </div>
     ),
     size

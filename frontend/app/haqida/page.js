@@ -12,7 +12,8 @@ export default function AboutPage() {
 
       <div className="space-y-5 leading-relaxed text-slate-300">
         <p>
-          <strong className="text-white">Biznes Darslari</strong> (biznesxabar.uz) —
+          <strong className="text-white">Biznes Darslari</strong> (biznesdarslari.uz) —
+
           O&apos;zbekistonda biznes ochish va yuritishni o&apos;rgatuvchi ta&apos;lim
           platformasi. Maqsadimiz — o&apos;zbek tadbirkorlariga biznesni boshlash, moliyani
           boshqarish, marketing, sotuv va o&apos;sish bo&apos;yicha amaliy, tushunarli darslar

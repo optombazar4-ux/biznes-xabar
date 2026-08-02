@@ -16,7 +16,8 @@ SMTP_HOST = os.getenv("SMTP_HOST", "")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
-SENDER_EMAIL = os.getenv("SENDER_EMAIL", "noreply@biznesxabar.uz")
+SENDER_EMAIL = os.getenv("SENDER_EMAIL", "noreply@biznesdarslari.uz")
+
 
 
 def send_email_digest(to_emails: List[str], subject: str, articles: List[dict]) -> int:

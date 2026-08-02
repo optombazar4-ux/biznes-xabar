@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { apiPost } from "../lib/api";
 
-const STORAGE_KEY = "biznesxabar_popup_closed_at";
+const STORAGE_KEY = "biznesdarslari_popup_closed_at";
+
 const SHOW_DELAY_MS = 8_000;
 const COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000;
 

@@ -12,7 +12,8 @@ export default function AdPlaceholder({ type = "sidebar" }) {
       >
         <span className="text-xs uppercase tracking-widest text-slate-600">Reklama</span>
         <span className="mt-1 text-xs text-slate-500">{label}</span>
-        <span className="mt-2 text-[10px] text-slate-600">reklama@biznesxabar.uz</span>
+        <span className="mt-2 text-[10px] text-slate-600">reklama@biznesdarslari.uz</span>
+
       </div>
     </div>
   );

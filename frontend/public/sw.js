@@ -1,4 +1,5 @@
-const CACHE = "biznesxabar-v1";
+const CACHE = "biznesdarslari-v1";
+
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();

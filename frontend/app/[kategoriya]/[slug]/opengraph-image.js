@@ -89,7 +89,8 @@ export default async function OgImage({ params }) {
             >
               {category}
             </div>
-            <div style={{ color: "#64748b", fontSize: 24 }}>biznesxabar.uz</div>
+            <div style={{ color: "#64748b", fontSize: 24 }}>biznesdarslari.uz</div>
+
           </div>
         </div>
 

@@ -130,7 +130,8 @@ export default function RootLayout({ children }) {
               🤖 Telegram Bot (@Biznesxabar_bot)
             </a>
           </div>
-          © {new Date().getFullYear()} Biznes Darslari (biznesxabar.uz) — O&apos;zbekistonda biznes ochish va yuritish bo&apos;yicha amaliy darslar
+          © {new Date().getFullYear()} Biznes Darslari (biznesdarslari.uz) — O&apos;zbekistonda biznes ochish va yuritish bo&apos;yicha amaliy darslar
+
         </footer>
         <SubscribePopup />
         <PwaRegister />
