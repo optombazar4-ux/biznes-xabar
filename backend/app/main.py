@@ -127,26 +127,20 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        FRONTEND_ORIGIN,
-        "http://localhost:3000",
-        "https://biznesxabar.uz",
-        "https://www.biznesxabar.uz",
-    ],
-    # Har qanday Vercel deploy (production + preview) domenini qabul qiladi
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 app.include_router(news.router)
 app.include_router(categories.router)
 app.include_router(admin.router)
 
-# Generatsiya qilingan rasmlar (IMAGE_GENERATION=true rejimi uchun)
+# Generatsiya qilingan rasmlar va audiorasmlar
 Path(MEDIA_DIR).mkdir(parents=True, exist_ok=True)
 app.mount("/media", StaticFiles(directory=MEDIA_DIR), name="media")
+
 
 
 @app.get("/")

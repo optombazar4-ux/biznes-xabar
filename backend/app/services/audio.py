@@ -1,8 +1,7 @@
 """O'zbekcha Text-to-Speech (TTS) Audio Generatsiya Servisi.
 
-Google Gemini TTS (`gemini-2.5-flash` / `gemini-3.1-flash-tts` AUDIO modaliteti),
-EdgeTTS (uz-UZ-MadinaNeural) va gTTS yordamida maqoladan audio yaratadi hamda
-/media/audio/ papkasida keshlaydi.
+EdgeTTS (uz-UZ-MadinaNeural), Google Gemini TTS (`gemini-3.1-flash-tts-preview`) hamda
+gTTS yordamida har bir dars uchun o'zbekcha audio fayl yaratadi hamda keshlaydi.
 """
 
 import asyncio
@@ -46,7 +45,6 @@ def _generate_gemini_audio(text: str, wav_path: Path) -> bool:
         client = genai.Client(api_key=GEMINI_API_KEY)
         prompt = f"Quyidagi dars matnini o'zbek tilida aniq va ravon o'qib ber:\n\n{text}"
         
-        # gemini-2.5-flash yoki gemini-3.1-flash-tts
         model_name = GEMINI_TTS_MODEL if "flash" in GEMINI_TTS_MODEL else "gemini-2.5-flash"
         
         response = client.models.generate_content(
@@ -92,7 +90,7 @@ def generate_article_audio(slug: str, title: str, summary: str, practical_note: 
     mp3_filepath = AUDIO_DIR / mp3_filename
     wav_filepath = AUDIO_DIR / wav_filename
 
-    # 1. Keshlangan tayyor audio bo'lsa
+    # 1. Keshlangan fayl mavjud bo'lsa (haqiqatda diskda bor bo'lganini qaytaramiz)
     if mp3_filepath.exists() and mp3_filepath.stat().st_size > 500:
         return f"{BACKEND_PUBLIC_URL}/media/audio/{mp3_filename}"
     if wav_filepath.exists() and wav_filepath.stat().st_size > 500:
@@ -106,12 +104,7 @@ def generate_article_audio(slug: str, title: str, summary: str, practical_note: 
     if not clean_text:
         clean_text = "Biznes darsi va amaliy tavsiyalar."
 
-    # 3. Primary: Official Gemini API TTS
-    if GEMINI_API_KEY:
-        if _generate_gemini_audio(clean_text, wav_filepath):
-            return f"{BACKEND_PUBLIC_URL}/media/audio/{wav_filename}"
-
-    # 4. Secondary: EdgeTTS O'zbek Tili (uz-UZ-MadinaNeural)
+    # 3. EdgeTTS O'zbek Tili (uz-UZ-MadinaNeural — barcha brauzerlar va pleerlarda standart ijro etiladigan MP3)
     try:
         def _worker():
             loop = asyncio.new_event_loop()
@@ -130,18 +123,22 @@ def generate_article_audio(slug: str, title: str, summary: str, practical_note: 
     except Exception as err:
         print(f"⚠️ EdgeTTS xatosi: {err}")
 
-    # 5. Fallback: gTTS
+    # 4. Gemini GenAI SDK Audio
+    if GEMINI_API_KEY:
+        if _generate_gemini_audio(clean_text, wav_filepath):
+            return f"{BACKEND_PUBLIC_URL}/media/audio/{wav_filename}"
+
+    # 5. gTTS Fallback
     try:
         from gtts import gTTS
         tts = gTTS(text=clean_text[:500], lang="tr")
         tts.save(str(mp3_filepath))
         if mp3_filepath.exists() and mp3_filepath.stat().st_size > 500:
-            print(f"✅ gTTS audio yaratildi: {mp3_filename}")
             return f"{BACKEND_PUBLIC_URL}/media/audio/{mp3_filename}"
     except Exception as err:
         print(f"⚠️ gTTS xatosi: {err}")
 
-    # 6. Fallback: har qanday holatda ham MP3 kesh faylini yaratadi
+    # 6. Fallback silent MP3
     try:
         with open(mp3_filepath, "wb") as f:
             f.write(SILENT_MP3_FRAME)

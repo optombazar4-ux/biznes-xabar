@@ -32,10 +32,14 @@ export default function AudioPlayer({ slug }) {
       const data = await res.json();
       if (data && data.audio_url) {
         let finalUrl = data.audio_url;
+        if (typeof window !== "undefined" && finalUrl.includes("/media/audio/")) {
+          finalUrl = finalUrl.substring(finalUrl.indexOf("/media/audio/"));
+        }
         setAudioUrl(finalUrl);
       } else {
         throw new Error("Audio fayl manzili olinmadi");
       }
+
     } catch (err) {
       console.error("Audio fetch error:", err);
       setError(
