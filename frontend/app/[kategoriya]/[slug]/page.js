@@ -3,8 +3,8 @@ import { permanentRedirect } from "next/navigation";
 import LessonQuiz from "../../../components/LessonQuiz";
 import MarkdownContent from "../../../components/MarkdownContent";
 import MarkRead from "../../../components/MarkRead";
-import AudioPlayer from "../../../components/AudioPlayer";
 import TelegramBanner from "../../../components/TelegramBanner";
+
 
 
 
@@ -157,10 +157,8 @@ export default async function LessonPage({ params }) {
         {article.summary}
       </p>
 
-      {/* Audio Player — Ovozli tinglash */}
-      <AudioPlayer slug={article.slug} />
-
       <div className="prose-invert mb-6">
+
 
         <MarkdownContent content={article.content} />
       </div>
