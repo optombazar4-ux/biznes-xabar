@@ -131,7 +131,8 @@ def send_digest(db: Session = Depends(get_db)):
 
     sent_count = send_email_digest(
         to_emails=emails,
-        subject="🎓 Biznes Xabar — Eng so'nggi amaliy darslar dayjesti",
+        subject="🎓 Biznes Darslari — Eng so'nggi amaliy darslar dayjesti",
+
         articles=art_dicts,
     )
     return {"ok": True, "sent_count": sent_count, "xabar": f"Dayjest {sent_count} ta obunachiga yuborildi"}

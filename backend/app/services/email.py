@@ -42,12 +42,11 @@ def send_email_digest(to_emails: List[str], subject: str, articles: List[dict]) 
     <head><meta charset="utf-8"></head>
     <body style="font-family: Arial, sans-serif; background-color: #020617; color: #f8fafc; padding: 20px;">
         <div style="max-width: 600px; margin: 0 auto; background-color: #090d16; padding: 24px; border-radius: 12px; border: 1px solid #1e293b;">
-            <h1 style="color: #f59e0b; text-align: center; margin-bottom: 4px;">🎓 Biznes Xabar Dayjest</h1>
-            <p style="text-align: center; color: #94a3b8; margin-top: 0;">O'zbekistonda biznes ochish va yuritish bo'yicha eng muhim darslar</p>
-            <hr style="border: 0; border-top: 1px solid #334155; margin: 20px 0;">
+            <h1 style="color: #f59e0b; text-align: center; margin-bottom: 4px;">🎓 Biznes Darslari Dayjesti</h1>
+            <p style="color: #94a3b8; text-align: center; margin-top: 0;">Siz uchun eng so'nggi amaliy darslar toplami</p>
             {items_html}
-            <div style="text-align: center; margin-top: 30px; font-size: 12px; color: #64748b;">
-                <p>Biznes Xabar ta'lim platformasi · <a href="{FRONTEND_ORIGIN}" style="color: #94a3b8;">Saytga o'tish</a></p>
+            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #334155; text-align: center; color: #64748b; font-size: 12px;">
+                <p>Biznes Darslari ta'lim platformasi · <a href="{FRONTEND_ORIGIN}" style="color: #94a3b8;">Saytga o'tish</a></p>
             </div>
         </div>
     </body>
