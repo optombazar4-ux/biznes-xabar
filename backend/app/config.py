@@ -87,6 +87,8 @@ AUTO_TELEGRAM_MIN_IMPORTANCE = int(os.getenv("AUTO_TELEGRAM_MIN_IMPORTANCE", "4"
 # Rasm topilmaganda Gemini bilan generatsiya qilish (pullik — standart o'chiq)
 IMAGE_GENERATION = _bool("IMAGE_GENERATION", "false")
 GEMINI_IMAGE_MODEL = os.getenv("GEMINI_IMAGE_MODEL", "gemini-3.1-flash-image")
+GEMINI_TTS_MODEL = os.getenv("GEMINI_TTS_MODEL", "gemini-3.1-flash-tts-preview")
+
 # Yaratilgan rasmlar saqlanadigan papka va ularning ommaviy manzili
 MEDIA_DIR = os.getenv("MEDIA_DIR", "./media")
 BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL", "http://localhost:8000")

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { API_URL } from "../lib/api";
 
 export default function AudioPlayer({ slug }) {
   const [loading, setLoading] = useState(false);
@@ -12,17 +11,35 @@ export default function AudioPlayer({ slug }) {
     if (audioUrl) return;
     setLoading(true);
     setError("");
+
     try {
-      const res = await fetch(`${API_URL}/api/news/${slug}/audio`);
-      if (!res.ok) throw new Error("Ovozli fayl tayyorlashda xatolik");
+      // Relative URL or NEXT_PUBLIC_API_URL fallback
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const targetUrl = `${baseUrl.replace(/\/$/, "")}/api/news/${slug}/audio`;
+
+      const res = await fetch(targetUrl, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || `Server xatosi: ${res.status}`);
+      }
+
       const data = await res.json();
       if (data.audio_url) {
         setAudioUrl(data.audio_url);
       } else {
-        throw new Error("Audio tayyorlanmadi");
+        throw new Error("Audio fayl manzili olinmadi");
       }
     } catch (err) {
-      setError(err.message || "Xatolik yuz berdi");
+      console.error("Audio fetch error:", err);
+      setError(
+        err.message?.includes("Failed to fetch")
+          ? "Backend server bilan aloqa bo'linmadi (http://localhost:8000 ishlayotganini tekshiring)."
+          : err.message || "Xatolik yuz berdi"
+      );
     } finally {
       setLoading(false);
     }
@@ -37,7 +54,9 @@ export default function AudioPlayer({ slug }) {
           </span>
           <div>
             <h4 className="text-sm font-semibold text-slate-200">Darsni ovozli tinglash</h4>
-            <p className="text-xs text-slate-400">Sun'iy intellekt taqdim etgan o'zbekcha audio</p>
+            <p className="text-xs text-slate-400">
+              Gemini 3.1 Flash TTS AI taqdim etgan o&apos;zbekcha audio
+            </p>
           </div>
         </div>
 
@@ -47,17 +66,17 @@ export default function AudioPlayer({ slug }) {
             disabled={loading}
             className="rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-amber-500 disabled:opacity-50"
           >
-            {loading ? "⏳ Audio yuklanmoqda..." : "🔊 Ovozli eshitish"}
+            {loading ? "⏳ Gemini AI Audio tayyorlanmoqda..." : "🔊 Ovozli eshitish"}
           </button>
         )}
       </div>
 
-      {error && <div className="mt-2 text-xs text-red-400">{error}</div>}
+      {error && <div className="mt-2 text-xs font-medium text-red-400">{error}</div>}
 
       {audioUrl && (
         <div className="mt-3">
           <audio controls autoPlay src={audioUrl} className="w-full h-10 rounded-lg">
-            Brauzeringiz audio pleerni qo'llab-quvvatlamaydi.
+            Brauzeringiz audio pleerni qo&apos;llab-quvvatlamaydi.
           </audio>
         </div>
       )}
