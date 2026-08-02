@@ -47,7 +47,8 @@ export function pwaIcon(px) {
             letterSpacing: 4 * s,
           }}
         >
-          XABAR
+          DARSLARI
+
         </div>
       </div>
     ),

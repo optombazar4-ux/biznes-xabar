@@ -22,7 +22,8 @@ export default function AppleIcon() {
       >
         <Chart size={92} />
         <div style={{ fontSize: 22, color: "#94a3b8", letterSpacing: 4 }}>
-          XABAR
+          DARSLARI
+
         </div>
       </div>
     ),
