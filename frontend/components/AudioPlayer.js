@@ -13,9 +13,11 @@ export default function AudioPlayer({ slug }) {
     setError("");
 
     try {
-      // Relative URL or NEXT_PUBLIC_API_URL fallback
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const targetUrl = `${baseUrl.replace(/\/$/, "")}/api/news/${slug}/audio`;
+      let targetUrl = `/api/news/${encodeURIComponent(slug)}/audio`;
+      if (typeof window !== "undefined") {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        targetUrl = `${apiUrl.replace(/\/$/, "")}/api/news/${encodeURIComponent(slug)}/audio`;
+      }
 
       const res = await fetch(targetUrl, {
         method: "GET",
@@ -28,8 +30,9 @@ export default function AudioPlayer({ slug }) {
       }
 
       const data = await res.json();
-      if (data.audio_url) {
-        setAudioUrl(data.audio_url);
+      if (data && data.audio_url) {
+        let finalUrl = data.audio_url;
+        setAudioUrl(finalUrl);
       } else {
         throw new Error("Audio fayl manzili olinmadi");
       }
@@ -37,8 +40,8 @@ export default function AudioPlayer({ slug }) {
       console.error("Audio fetch error:", err);
       setError(
         err.message?.includes("Failed to fetch")
-          ? "Backend server bilan aloqa bo'linmadi (http://localhost:8000 ishlayotganini tekshiring)."
-          : err.message || "Xatolik yuz berdi"
+          ? "Backend server (http://localhost:8000) bilan aloqa bog'lanmadi."
+          : err.message || "Audio generatsiyasida xatolik"
       );
     } finally {
       setLoading(false);
@@ -55,7 +58,7 @@ export default function AudioPlayer({ slug }) {
           <div>
             <h4 className="text-sm font-semibold text-slate-200">Darsni ovozli tinglash</h4>
             <p className="text-xs text-slate-400">
-              Gemini 3.1 Flash TTS AI taqdim etgan o&apos;zbekcha audio
+              Gemini 3.1 Flash & EdgeTTS AI taqdim etgan o&apos;zbekcha audio
             </p>
           </div>
         </div>
@@ -66,7 +69,7 @@ export default function AudioPlayer({ slug }) {
             disabled={loading}
             className="rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-amber-500 disabled:opacity-50"
           >
-            {loading ? "⏳ Gemini AI Audio tayyorlanmoqda..." : "🔊 Ovozli eshitish"}
+            {loading ? "⏳ AI Audio tayyorlanmoqda..." : "🔊 Ovozli eshitish"}
           </button>
         )}
       </div>
