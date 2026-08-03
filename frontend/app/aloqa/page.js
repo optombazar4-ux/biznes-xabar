@@ -16,23 +16,23 @@ const CONTACTS = [
   {
     icon: "🤝",
     title: "Hamkorlik va Reklama",
-    value: "hamkorlik@biznesdarslari.uz",
-    href: "mailto:hamkorlik@biznesdarslari.uz",
+    value: "akramfarmonov0@gmail.com",
+    href: "mailto:akramfarmonov0@gmail.com",
     note: "B2B hamkorlik va takliflar",
   },
   {
     icon: "✉️",
     title: "Tahririyat va Takliflar",
-    value: "salom@biznesdarslari.uz",
-    href: "mailto:salom@biznesdarslari.uz",
+    value: "akramfarmonov0@gmail.com",
+    href: "mailto:akramfarmonov0@gmail.com",
     note: "Umumiy murojaat va fikrlar",
   },
   {
-    icon: "🛡️",
-    title: "Ekspertlar va Fikr-mulohaza",
-    value: "tahririyat@biznesdarslari.uz",
-    href: "mailto:tahririyat@biznesdarslari.uz",
-    note: "Darslar tahririyati va manbalar",
+    icon: "🤖",
+    title: "Telegram bot",
+    value: "@Biznesxabar_bot",
+    href: "https://t.me/Biznesxabar_bot",
+    note: "Darslarni botda o'qish",
   },
 ];
 

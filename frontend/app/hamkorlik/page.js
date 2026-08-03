@@ -105,7 +105,7 @@ export default function PartnershipPage() {
             </div>
 
             <a
-              href="mailto:hamkorlik@biznesdarslari.uz"
+              href="mailto:akramfarmonov0@gmail.com"
               className={`mt-6 block rounded-xl py-2.5 text-center text-xs font-bold transition-all ${
                 pkg.recommended
                   ? "bg-amber-500 text-slate-950 hover:bg-amber-400"
@@ -127,10 +127,10 @@ export default function PartnershipPage() {
           </p>
         </div>
         <a
-          href="mailto:hamkorlik@biznesdarslari.uz"
+          href="mailto:akramfarmonov0@gmail.com"
           className="rounded-xl bg-amber-500 px-6 py-3 text-sm font-bold text-slate-950 hover:bg-amber-400 transition-all shadow-lg shadow-amber-500/20"
         >
-          📧 hamkorlik@biznesdarslari.uz
+          📧 akramfarmonov0@gmail.com
         </a>
       </div>
     </div>
