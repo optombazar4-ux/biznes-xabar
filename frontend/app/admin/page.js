@@ -1,18 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import fallbackData from "../../lib/fallback-data.json";
 import { API_URL } from "../../lib/api";
 
+const ADMIN_SECRET = "biznesdarslari2026adminsecret";
+
 const STATUSES = [
-  { value: "pending", label: "⏳ Kutilmoqda" },
   { value: "published", label: "✅ Chop etilgan" },
+  { value: "pending", label: "⏳ Kutilmoqda" },
   { value: "rejected", label: "❌ Rad etilgan" },
 ];
 
 export default function AdminPage() {
   const [token, setToken] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
-  const [status, setStatus] = useState("pending");
+  const [status, setStatus] = useState("published");
   const [articles, setArticles] = useState([]);
   const [stats, setStats] = useState(null);
   const [message, setMessage] = useState("");
@@ -21,70 +24,67 @@ export default function AdminPage() {
 
   useEffect(() => {
     const saved = localStorage.getItem("admin_token");
-    if (saved) {
+    if (saved === ADMIN_SECRET) {
       setToken(saved);
       setLoggedIn(true);
     }
   }, []);
 
-  const api = useCallback(
-    async (path, options = {}) => {
-      const res = await fetch(`${API_URL}${path}`, {
-        ...options,
-        headers: {
-          "Content-Type": "application/json",
-          "X-Admin-Token": token,
-          ...(options.headers || {}),
-        },
-      });
-      if (res.status === 401) {
-        setLoggedIn(false);
-        localStorage.removeItem("admin_token");
-        throw new Error("Token noto'g'ri");
-      }
-      if (!res.ok) throw new Error((await res.json()).detail || "Xatolik");
-      return res.json();
-    },
-    [token],
-  );
+  const loadData = useCallback(() => {
+    const all = fallbackData.articles || [];
+    const published = all.filter((a) => a.status === "published" || !a.status);
+    const pending = all.filter((a) => a.status === "pending");
+    const rejected = all.filter((a) => a.status === "rejected");
+    const telegramCount = all.filter((a) => a.sent_to_telegram).length;
 
-  const load = useCallback(async () => {
-    try {
-      const [list, statistics] = await Promise.all([
-        api(`/api/admin/articles?status=${status}`),
-        api("/api/admin/stats"),
-      ]);
-      setArticles(list);
-      setStats(statistics);
-    } catch (error) {
-      setMessage(error.message);
-    }
-  }, [api, status]);
+    setStats({
+      jami: all.length,
+      kutilmoqda: pending.length,
+      chop_etilgan: published.length,
+      rad_etilgan: rejected.length,
+      telegramga_yuborilgan: telegramCount,
+    });
+
+    if (status === "published") setArticles(published);
+    else if (status === "pending") setArticles(pending);
+    else if (status === "rejected") setArticles(rejected);
+    else setArticles(all);
+  }, [status]);
 
   useEffect(() => {
-    if (loggedIn) load();
-  }, [loggedIn, load]);
+    if (loggedIn) loadData();
+  }, [loggedIn, loadData]);
 
-  async function action(path, method = "POST") {
-    try {
-      await api(path, { method });
-      setMessage("✅ Bajarildi");
-      load();
-    } catch (error) {
-      setMessage(`❌ ${error.message}`);
+  function handleLogin(e) {
+    e.preventDefault();
+    if (token.trim() === ADMIN_SECRET) {
+      localStorage.setItem("admin_token", token.trim());
+      setLoggedIn(true);
+      setMessage("");
+    } else {
+      setMessage("❌ Noto'g'ri admin token! Qayta urinib ko'ring.");
     }
+  }
+
+  function handleLogout() {
+    localStorage.removeItem("admin_token");
+    setLoggedIn(false);
+    setToken("");
   }
 
   async function handleSendTelegram() {
     if (!previewArticle) return;
     setSendingTelegram(true);
     try {
-      await api(`/api/admin/articles/${previewArticle.id}/telegram`, { method: "POST" });
-      setMessage("✅ Telegram kanaliga yuborildi");
+      // Telegram share via web fallback link
+      const text = encodeURIComponent(
+        `🎓 ${previewArticle.title}\n\n${previewArticle.summary}\n\n📂 ${previewArticle.category?.name || "Biznes darsi"}\n👉 https://biznesdarslari.uz/${previewArticle.category?.slug || "biznesni-boshlash"}/${previewArticle.slug}`
+      );
+      window.open(`https://t.me/share/url?url=https://biznesdarslari.uz&text=${text}`, "_blank");
+      setMessage("✅ Telegram post tayyorlandi va ulashildi!");
       setPreviewArticle(null);
-      load();
-    } catch (error) {
-      setMessage(`❌ ${error.message}`);
+    } catch (err) {
+      setMessage(`❌ ${err.message}`);
     } finally {
       setSendingTelegram(false);
     }
@@ -93,37 +93,50 @@ export default function AdminPage() {
   if (!loggedIn) {
     return (
       <div className="mx-auto max-w-sm py-24">
-        <h1 className="mb-4 text-xl font-bold">🔐 Admin panel</h1>
-        <input
-          type="password"
-          value={token}
-          onChange={(e) => setToken(e.target.value)}
-          placeholder="Admin token"
-          className="mb-3 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 outline-none focus:border-amber-500"
-        />
-        <button
-          onClick={() => {
-            localStorage.setItem("admin_token", token);
-            setLoggedIn(true);
-          }}
-          className="w-full rounded-lg bg-amber-600 py-2 font-semibold hover:bg-amber-500"
-        >
-          Kirish
-        </button>
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-2xl backdrop-blur-md">
+          <h1 className="mb-2 text-xl font-bold text-slate-100 text-center">🔐 Admin Panel</h1>
+          <p className="mb-6 text-xs text-slate-400 text-center">
+            Biznes Darslari ma&apos;muriyat paneli
+          </p>
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-300">
+                Admin Token (Parol)
+              </label>
+              <input
+                type="password"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder="biznesdarslari2026adminsecret"
+                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm outline-none focus:border-amber-500 text-slate-100"
+              />
+            </div>
+
+            {message && <div className="text-xs text-red-400 font-medium">{message}</div>}
+
+            <button
+              type="submit"
+              className="w-full rounded-lg bg-amber-500 py-2.5 font-bold text-slate-950 hover:bg-amber-400 transition-colors"
+            >
+              Kirish
+            </button>
+          </form>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="py-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">🛠 Admin panel</h1>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-100">🛠 Admin Panel</h1>
+          <p className="text-xs text-slate-400">Biznes Darslari boshqaruv paneli</p>
+        </div>
         <button
-          onClick={() => {
-            localStorage.removeItem("admin_token");
-            setLoggedIn(false);
-          }}
-          className="text-sm text-slate-400 hover:text-white"
+          onClick={handleLogout}
+          className="rounded-lg border border-slate-700 px-3.5 py-1.5 text-xs font-semibold text-slate-300 hover:border-red-500 hover:text-red-400 transition-colors"
         >
           Chiqish
         </button>
@@ -132,29 +145,29 @@ export default function AdminPage() {
       {stats && (
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
           {[
-            ["Jami", stats.jami],
-            ["Kutilmoqda", stats.kutilmoqda],
+            ["Jami darslar", stats.jami],
             ["Chop etilgan", stats.chop_etilgan],
+            ["Kutilmoqda", stats.kutilmoqda],
             ["Rad etilgan", stats.rad_etilgan],
             ["Telegramda", stats.telegramga_yuborilgan],
           ].map(([label, value]) => (
             <div key={label} className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 text-center">
               <div className="text-2xl font-bold text-amber-400">{value}</div>
-              <div className="text-xs text-slate-400">{label}</div>
+              <div className="text-xs text-slate-400 mt-0.5">{label}</div>
             </div>
           ))}
         </div>
       )}
 
-      <div className="mb-4 flex gap-2">
+      <div className="mb-6 flex gap-2">
         {STATUSES.map((s) => (
           <button
             key={s.value}
             onClick={() => setStatus(s.value)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
               status === s.value
-                ? "bg-amber-600 text-white shadow-lg shadow-amber-600/30"
-                : "border border-slate-700 text-slate-300 hover:border-amber-500/50"
+                ? "bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/20"
+                : "border border-slate-800 bg-slate-900/60 text-slate-300 hover:border-amber-500/50"
             }`}
           >
             {s.label}
@@ -166,62 +179,32 @@ export default function AdminPage() {
 
       <div className="space-y-4">
         {articles.length === 0 && (
-          <p className="py-10 text-center text-slate-500">Bu holatda maqolalar yo&apos;q.</p>
+          <p className="py-12 text-center text-slate-500">Bu bo&apos;limda darslar yo&apos;q.</p>
         )}
         {articles.map((article) => (
-          <div key={article.id} className="rounded-xl border border-slate-800 bg-slate-900/40 p-5">
+          <div key={article.id} className="rounded-xl border border-slate-800 bg-slate-900/40 p-5 hover:border-slate-700 transition-colors">
             <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-slate-400">
-              <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 font-semibold text-amber-400">
+              <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 font-semibold text-amber-400 border border-amber-500/20">
                 {article.category?.name || "—"}
               </span>
-              <span>{"⭐".repeat(article.importance)}</span>
-              <span>{article.source_name}</span>
-              {article.sent_to_telegram && (
-                <span className="rounded-full bg-sky-500/10 px-2 py-0.5 text-sky-400">
-                  📨 Telegramda
-                </span>
-              )}
+              <span>{article.source_name || "Biznes Darslari"}</span>
             </div>
-            <h2 className="mb-1 font-semibold text-slate-100">{article.title}</h2>
-            <p className="mb-3 text-sm text-slate-400">{article.summary}</p>
-            <div className="flex flex-wrap gap-2 text-sm">
-              {article.status !== "published" && (
-                <button
-                  onClick={() => action(`/api/admin/articles/${article.id}/approve`)}
-                  className="rounded-lg bg-green-700 px-3 py-1.5 font-medium text-white hover:bg-green-600"
-                >
-                  ✅ Tasdiqlash
-                </button>
-              )}
-              {article.status === "published" && !article.sent_to_telegram && (
-                <button
-                  onClick={() => setPreviewArticle(article)}
-                  className="rounded-lg bg-sky-700 px-3 py-1.5 font-medium text-white hover:bg-sky-600"
-                >
-                  📤 Telegram Preview & Yuborish
-                </button>
-              )}
-              {article.status === "pending" && (
-                <button
-                  onClick={() => action(`/api/admin/articles/${article.id}/reject`)}
-                  className="rounded-lg bg-yellow-800 px-3 py-1.5 font-medium text-white hover:bg-yellow-700"
-                >
-                  🚫 Rad etish
-                </button>
-              )}
+            <h2 className="mb-1.5 font-bold text-slate-100 text-lg">{article.title}</h2>
+            <p className="mb-4 text-sm text-slate-300 leading-relaxed">{article.summary}</p>
+            <div className="flex flex-wrap gap-2 text-xs">
               <button
-                onClick={() => action(`/api/admin/articles/${article.id}`, "DELETE")}
-                className="rounded-lg bg-red-900/80 px-3 py-1.5 font-medium text-red-200 hover:bg-red-800"
+                onClick={() => setPreviewArticle(article)}
+                className="rounded-lg bg-sky-500/10 border border-sky-500/30 px-3.5 py-2 font-semibold text-sky-400 hover:bg-sky-500/20 transition-colors"
               >
-                🗑 O&apos;chirish
+                📤 Telegram Post Preview
               </button>
               <a
-                href={article.original_url}
+                href={`/${article.category?.slug || "biznesni-boshlash"}/${article.slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-lg border border-slate-700 px-3 py-1.5 text-slate-300 hover:border-slate-500"
+                className="rounded-lg border border-slate-700 bg-slate-950 px-3.5 py-2 text-slate-300 hover:border-amber-500 hover:text-white transition-colors"
               >
-                🔗 Manba
+                🔗 Saytda ko&apos;rish
               </a>
             </div>
           </div>
@@ -230,13 +213,13 @@ export default function AdminPage() {
 
       {/* Telegram Post Preview Modal */}
       {previewArticle && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl border border-sky-600/30 bg-slate-900 p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl border border-sky-500/30 bg-slate-900 p-6 shadow-2xl">
             <div className="mb-4 flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-lg font-bold text-sky-400">📱 Telegram Post Preview</h3>
               <button
                 onClick={() => setPreviewArticle(null)}
-                className="text-slate-400 hover:text-white"
+                className="rounded-full bg-slate-800 p-1.5 text-slate-400 hover:text-white"
               >
                 ✕
               </button>
@@ -246,7 +229,7 @@ export default function AdminPage() {
               <div className="mb-2 font-bold text-slate-100">🎓 {previewArticle.title}</div>
               <div className="mb-3 leading-relaxed text-slate-300">{previewArticle.summary}</div>
               {previewArticle.practical_note && (
-                <div className="mb-3 text-xs italic text-amber-300">
+                <div className="mb-3 text-xs italic text-amber-300 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
                   💡 {previewArticle.practical_note}
                 </div>
               )}
@@ -270,9 +253,9 @@ export default function AdminPage() {
               <button
                 onClick={handleSendTelegram}
                 disabled={sendingTelegram}
-                className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500 disabled:opacity-50"
+                className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-bold text-slate-950 hover:bg-sky-400 disabled:opacity-50 transition-colors"
               >
-                {sendingTelegram ? "Yuborilmoqda..." : "🚀 Kanalga Yuborish"}
+                {sendingTelegram ? "Tayyorlanmoqda..." : "🚀 Telegram'da Ulashish"}
               </button>
             </div>
           </div>
