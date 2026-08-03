@@ -95,7 +95,7 @@ export default async function HomePage() {
           <section>
             <h2 className="mb-4 text-xl font-bold">🆕 So&apos;nggi darslar</h2>
             {hasLessons ? (
-              <div className="grid gap-5 sm:grid-cols-2">
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {latest.map((article) => (
                   <ArticleCard key={article.id} article={article} />
                 ))}

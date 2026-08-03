@@ -95,7 +95,7 @@ export default async function IntentPage({ params }) {
   };
 
   return (
-    <div className="mx-auto max-w-3xl py-8">
+    <div className="mx-auto max-w-6xl py-8">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
