@@ -1,23 +1,88 @@
-// Server (SSR) konteyner ichida backend'ga ichki tarmoq orqali murojaat qiladi
-// (API_URL_INTERNAL), brauzer esa tashqi manzildan (NEXT_PUBLIC_API_URL).
+import fallbackData from "./fallback-data.json";
+
 const isServer = typeof window === "undefined";
 const API_URL =
   (isServer && process.env.API_URL_INTERNAL) ||
   process.env.NEXT_PUBLIC_API_URL ||
   "http://localhost:8000";
 
+function filterFallbackNews(params = {}) {
+  let list = fallbackData.articles || [];
+  
+  if (params.kategoriya) {
+    list = list.filter((a) => a.category?.slug === params.kategoriya);
+  }
+  
+  if (params.q) {
+    const q = params.q.toLowerCase();
+    list = list.filter(
+      (a) =>
+        a.title.toLowerCase().includes(q) ||
+        a.summary.toLowerCase().includes(q) ||
+        (a.tags && a.tags.some((t) => t.toLowerCase().includes(q)))
+    );
+  }
+
+  if (params.limit) {
+    list = list.slice(0, Number(params.limit));
+  }
+
+  return list;
+}
+
+function getFallbackArticle(slug) {
+  return (fallbackData.articles || []).find((a) => a.slug === slug) || null;
+}
+
+function getFallbackRelated(slug) {
+  const current = getFallbackArticle(slug);
+  if (!current) return [];
+  const catSlug = current.category?.slug;
+  return (fallbackData.articles || [])
+    .filter((a) => a.slug !== slug && a.category?.slug === catSlug)
+    .slice(0, 4);
+}
+
 export async function apiGet(path, params = {}) {
   const url = new URL(`${API_URL}${path}`);
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null) url.searchParams.set(key, value);
   });
+
   try {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+    const res = await fetch(url, { cache: "no-store", signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) return data;
+      if (data && typeof data === "object" && Object.keys(data).length > 0) return data;
+    }
+  } catch (err) {
+    // API server yo'q bo'lsa yoki offline bo'lsa fallback ishlashiga o'tamiz
   }
+
+  // Fallback ma'lumotlar bilan ta'minlash (offline / build vaqtida ham 100% ishlaydi)
+  if (path === "/api/news" || path.startsWith("/api/news?")) {
+    return filterFallbackNews(params);
+  }
+  if (path === "/api/categories") {
+    return fallbackData.categories || [];
+  }
+  if (path.startsWith("/api/news/") && path.endsWith("/related")) {
+    const parts = path.split("/");
+    const slug = parts[3];
+    return getFallbackRelated(slug);
+  }
+  if (path.startsWith("/api/news/")) {
+    const slug = path.replace("/api/news/", "");
+    return getFallbackArticle(slug);
+  }
+
+  return null;
 }
 
 export async function apiPost(path, body = {}) {
