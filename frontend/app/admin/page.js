@@ -112,7 +112,7 @@ export default function AdminPage() {
                 type="password"
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
-                placeholder="biznesdarslari2026adminsecret202608"
+                placeholder="Maxfiy parolni kiriting..."
                 className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm outline-none focus:border-amber-500 text-slate-100"
               />
             </div>
