@@ -44,7 +44,7 @@ export default function IdeaList({ ideas }) {
       </div>
 
       <p className="mb-4 text-sm text-slate-400">
-        {visibleIdeas.length} ta mos g&apos;oya
+        {visibleIdeas.length} ta verifikatsiya qilingan g&apos;oya
       </p>
 
       {visibleIdeas.length > 0 ? (
@@ -52,29 +52,34 @@ export default function IdeaList({ ideas }) {
           {visibleIdeas.map((idea) => (
             <article
               key={idea.slug}
-              className="flex flex-col rounded-xl border border-slate-800 bg-slate-900/60 p-5 transition hover:border-amber-600"
+              className="flex flex-col rounded-xl border border-slate-800 bg-slate-900/60 p-5 transition hover:border-amber-600 backdrop-blur-md"
             >
-              <div className="mb-3 flex flex-wrap gap-1.5">
-                {(idea.tags || [])
-                  .filter((tag) => FILTERS.some((filter) => filter.value === tag))
-                  .map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full bg-amber-500/10 px-2.5 py-1 text-[11px] font-semibold text-amber-400"
-                    >
-                      {tag}
-                    </span>
-                  ))}
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-1.5">
+                <div className="flex flex-wrap gap-1.5">
+                  {(idea.tags || [])
+                    .filter((tag) => FILTERS.some((filter) => filter.value === tag))
+                    .map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-400 border border-amber-500/20"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                </div>
+                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 border border-emerald-500/20">
+                  🟢 Bozor Data Verifikatsiyasi
+                </span>
               </div>
-              <h2 className="mb-2 font-semibold leading-snug">{idea.title}</h2>
-              <p className="mb-4 line-clamp-3 text-sm leading-relaxed text-slate-400">
+              <h2 className="mb-2 font-semibold leading-snug text-slate-100 text-base">{idea.title}</h2>
+              <p className="mb-4 line-clamp-3 text-sm leading-relaxed text-slate-300">
                 {idea.summary}
               </p>
-              <div className="mt-auto flex items-center justify-between text-xs">
-                <span className="text-slate-500">⏱ {idea.minutes} daqiqa</span>
+              <div className="mt-auto flex items-center justify-between text-xs pt-3 border-t border-slate-800/60">
+                <span className="text-slate-400">⏱ {idea.minutes} daqiqa o&apos;qish</span>
                 <Link
                   href={`/biznes-goyalari/${idea.slug}`}
-                  className="font-semibold text-amber-400 hover:underline"
+                  className="font-semibold text-amber-400 hover:underline flex items-center gap-1"
                 >
                   G&apos;oyani ko&apos;rish →
                 </Link>
