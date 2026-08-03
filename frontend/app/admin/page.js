@@ -81,11 +81,25 @@ export default function AdminPage() {
     if (!previewArticle) return;
     setSendingTelegram(true);
     try {
-      const text = encodeURIComponent(
-        `🎓 ${previewArticle.title}\n\n${previewArticle.summary}\n\n📂 ${previewArticle.category?.name || "Biznes darsi"}\n👉 https://biznesdarslari.uz/${previewArticle.category?.slug || "biznesni-boshlash"}/${previewArticle.slug}`
-      );
-      window.open(`https://t.me/share/url?url=https://biznesdarslari.uz&text=${text}`, "_blank");
-      setMessage("✅ Telegram post tayyorlandi va ulashildi!");
+      const tagsText = (previewArticle.tags || [])
+        .map((t) => `#${t.replace(/\s+/g, "_")}`)
+        .join(" ");
+
+      const postText = `🎓 ${previewArticle.title}
+
+${previewArticle.summary}
+
+💡 Practical Note: ${previewArticle.practical_note || "Amaliy darslik va yo'riqnoma"}
+
+📂 Bo'lim: ${previewArticle.category?.name || "Biznes Darslari"}
+${tagsText ? `🏷 ${tagsText}\n` : ""}
+👉 Darsni to'liq o'qish: https://biznesdarslari.uz/${previewArticle.category?.slug || "biznesni-boshlash"}/${previewArticle.slug}
+
+📢 Rasmiy kanalimiz: @biznesxabari`;
+
+      await navigator.clipboard.writeText(postText);
+      window.open(`https://t.me/share/url?url=${encodeURIComponent(`https://biznesdarslari.uz/${previewArticle.category?.slug || "biznesni-boshlash"}/${previewArticle.slug}`)}&text=${encodeURIComponent(postText)}`, "_blank");
+      setMessage("✅ Telegram post nusxalandi va ulashish oynasi ochildi!");
       setPreviewArticle(null);
     } catch (err) {
       setMessage(`❌ ${err.message}`);
