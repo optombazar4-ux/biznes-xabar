@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import LessonPage, { generateMetadata as generateLessonMetadata } from "../../[kategoriya]/[slug]/page";
 import IdeaList from "../../../components/IdeaList";
 import { apiGet } from "../../../lib/api";
 import { readingMinutes } from "../../../lib/lesson";
@@ -56,7 +57,10 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }) {
   const { intent } = await params;
   const config = INTENTS[intent];
-  if (!config) return { title: "Sahifa topilmadi" };
+  if (!config) {
+    // Agar intent bo'lmasa, maqola metadata funksiyasiga uzatamiz
+    return generateLessonMetadata({ params: Promise.resolve({ kategoriya: "biznes-goyalari", slug: intent }) });
+  }
 
   return {
     title: config.title,
@@ -73,7 +77,11 @@ export async function generateMetadata({ params }) {
 export default async function IntentPage({ params }) {
   const { intent } = await params;
   const config = INTENTS[intent];
-  if (!config) notFound();
+
+  // Agar intent SEO Intent Hub bo'lmasa, uni maqola sifatida render qilamiz
+  if (!config) {
+    return LessonPage({ params: Promise.resolve({ kategoriya: "biznes-goyalari", slug: intent }) });
+  }
 
   const articles = (await apiGet("/api/news", { kategoriya: "biznes-goyalari", q: config.filter, limit: 100 })) || [];
   const lessons = articles.map((a) => ({
