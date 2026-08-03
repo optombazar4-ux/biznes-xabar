@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { permanentRedirect } from "next/navigation";
 import LessonQuiz from "../../../components/LessonQuiz";
+import LessonComments from "../../../components/LessonComments";
 import MarkdownContent from "../../../components/MarkdownContent";
 import MarkRead from "../../../components/MarkRead";
 import TelegramBanner from "../../../components/TelegramBanner";
@@ -218,6 +219,9 @@ export default async function LessonPage({ params }) {
 
       {/* Interaktiv Quiz */}
       <LessonQuiz quiz={article.quiz} />
+
+      {/* Community Izohlar va Muhokama Bloki */}
+      <LessonComments articleSlug={article.slug} />
 
 
       <div className="mb-6 flex flex-wrap gap-2">
