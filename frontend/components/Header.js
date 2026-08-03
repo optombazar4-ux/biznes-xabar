@@ -75,6 +75,12 @@ export default async function Header() {
             >
               🧮 Biznes Kalkulyatori
             </Link>
+            <Link
+              href="/hamkorlik"
+              className="inline-block rounded-full border border-slate-800 bg-slate-900/60 px-3.5 py-1 text-xs sm:text-sm text-slate-300 hover:border-amber-500 hover:text-white transition-all shrink-0"
+            >
+              🤝 B2B Hamkorlik
+            </Link>
             {categories.map((cat) => (
               <Link
                 key={cat.slug}

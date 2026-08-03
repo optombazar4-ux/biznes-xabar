@@ -39,7 +39,7 @@ export default async function sitemap() {
     priority: 0.9,
   }));
 
-  const staticUrls = ["/haqida", "/aloqa", "/maxfiylik"].map((path) => ({
+  const staticUrls = ["/kalkulyator", "/hamkorlik", "/haqida", "/aloqa", "/maxfiylik"].map((path) => ({
     url: `${SITE_URL}${path}`,
     lastModified: new Date(),
     changeFrequency: "monthly",
