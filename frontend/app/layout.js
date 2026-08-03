@@ -1,11 +1,15 @@
 import "./globals.css";
+import Script from "next/script";
 import Header from "../components/Header";
 import PwaRegister from "../components/PwaRegister";
 import SubscribePopup from "../components/SubscribePopup";
+import MobileNav from "../components/MobileNav";
 import { SITE_URL, SITE_NAME, SITE_ALT_NAMES } from "../lib/site";
 
 const DESCRIPTION =
   "O'zbekistonda biznes ochish va yuritish bo'yicha amaliy darslar — jahon tajribasi asosida, o'zbek tilida. Biznesni boshlash, moliya, marketing, sotuv, boshqaruv va onlayn biznes.";
+
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "G-BZNDRSLR26";
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
@@ -88,10 +92,30 @@ export const viewport = {
   themeColor: "#0f172a",
 };
 
-
 export default function RootLayout({ children }) {
   return (
     <html lang="uz">
+      <head>
+        {/* Google Analytics 4 (GA4) Script */}
+        <Script
+          strategy="afterInteractive"
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+        />
+        <Script
+          id="google-analytics"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${GA_ID}', {
+                page_path: window.location.pathname,
+              });
+            `,
+          }}
+        />
+      </head>
       <body>
         <script
           type="application/ld+json"
@@ -101,6 +125,14 @@ export default function RootLayout({ children }) {
         <main className="mx-auto max-w-6xl px-4 pb-24 md:pb-16">{children}</main>
         <footer className="border-t border-slate-800 py-8 text-center text-sm text-slate-500">
           <div className="mb-3 flex justify-center gap-4 flex-wrap">
+            <a href="/kalkulyator" className="text-amber-400 font-semibold hover:underline">
+              🧮 Biznes Kalkulyatori
+            </a>
+            <span>•</span>
+            <a href="/hamkorlik" className="text-slate-400 hover:text-white transition-colors">
+              🤝 B2B Hamkorlik
+            </a>
+            <span>•</span>
             <a href="/haqida" className="text-slate-400 hover:text-white transition-colors">
               Biz haqimizda
             </a>
@@ -121,19 +153,10 @@ export default function RootLayout({ children }) {
             >
               📢 Telegram Kanal (@biznesxabari)
             </a>
-            <span>•</span>
-            <a
-              href="https://t.me/Biznesxabar_bot"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-slate-400 hover:text-amber-400 transition-colors"
-            >
-              🤖 Telegram Bot (@Biznesxabar_bot)
-            </a>
           </div>
           © {new Date().getFullYear()} Biznes Darslari (biznesdarslari.uz) — O&apos;zbekistonda biznes ochish va yuritish bo&apos;yicha amaliy darslar
-
         </footer>
+        <MobileNav />
         <SubscribePopup />
         <PwaRegister />
       </body>
