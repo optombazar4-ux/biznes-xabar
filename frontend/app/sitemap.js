@@ -1,6 +1,16 @@
 import { apiGet } from "../lib/api";
 import { SITE_URL } from "../lib/site";
 
+const INTENTS = [
+  "5-mln-gacha",
+  "uydan",
+  "qishloq",
+  "onlayn",
+  "xizmat",
+  "savdo",
+  "ishlab-chiqarish",
+];
+
 export default async function sitemap() {
   const articles = (await apiGet("/api/news", { limit: 1000 })) || [];
   const categories = (await apiGet("/api/categories")) || [];
@@ -22,6 +32,13 @@ export default async function sitemap() {
     priority: 0.8,
   }));
 
+  const intentUrls = INTENTS.map((intent) => ({
+    url: `${SITE_URL}/biznes-goyalari/${intent}`,
+    lastModified: new Date(),
+    changeFrequency: "daily",
+    priority: 0.9,
+  }));
+
   const staticUrls = ["/haqida", "/aloqa", "/maxfiylik"].map((path) => ({
     url: `${SITE_URL}${path}`,
     lastModified: new Date(),
@@ -37,6 +54,7 @@ export default async function sitemap() {
       priority: 1.0,
     },
     ...categoryUrls,
+    ...intentUrls,
     ...staticUrls,
     ...articleUrls,
   ];

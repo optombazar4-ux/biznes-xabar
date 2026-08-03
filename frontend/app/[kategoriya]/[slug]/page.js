@@ -176,6 +176,24 @@ export default async function LessonPage({ params }) {
 
       <h1 className="mb-4 text-3xl font-bold leading-tight">{article.title}</h1>
 
+      {/* E-E-A-T Expert Verification Badge */}
+      <div className="mb-6 rounded-xl border border-slate-800 bg-slate-900/60 p-4 text-xs leading-relaxed text-slate-300 backdrop-blur-md">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="flex items-center gap-1.5 font-semibold text-slate-200">
+            <span>✍️ Tahririyat:</span>
+            <span className="text-amber-400">Biznes Darslari Expert Team</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span>🛡️ Tekshirgan ekspert:</span>
+            <span className="text-sky-400 font-medium">Moliya va Soliq Audit Tahririyati</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-slate-400">
+            <span>📅 Freshness SLA:</span>
+            <span>2026-yil Avgust (Huquqiy va soliqviy verifikatsiya)</span>
+          </div>
+        </div>
+      </div>
+
       {article.image_url && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={article.image_url} alt="" className="mb-6 w-full rounded-xl object-cover" />

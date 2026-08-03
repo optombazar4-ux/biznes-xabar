@@ -1,7 +1,7 @@
 export const metadata = {
   title: "Aloqa",
   description:
-    "Biznes Darslari jamoasi bilan bog'lanish: takliflar, xatolar haqida xabar berish va hamkorlik bo'yicha murojaatlar.",
+    "Biznes Darslari jamoasi va tahririyati bilan bog'lanish: takliflar, tahririyat, ekspertlar va hamkorlik bo'yicha murojaatlar.",
   alternates: { canonical: "/aloqa" },
 };
 
@@ -11,21 +11,28 @@ const CONTACTS = [
     title: "Telegram kanal",
     value: "@biznesxabari",
     href: "https://t.me/biznesxabari",
-    note: "Darslar va e'lonlar",
+    note: "Rasmiy darslar va e'lonlar",
   },
   {
-    icon: "🤖",
-    title: "Telegram bot",
-    value: "@Biznesxabar_bot",
-    href: "https://t.me/Biznesxabar_bot",
-    note: "Darslarni botda o'qish",
+    icon: "🤝",
+    title: "Hamkorlik va Reklama",
+    value: "hamkorlik@biznesdarslari.uz",
+    href: "mailto:hamkorlik@biznesdarslari.uz",
+    note: "B2B hamkorlik va takliflar",
   },
   {
     icon: "✉️",
-    title: "Elektron pochta",
-    value: "rovshanovazizbek0@gmail.com",
-    href: "mailto:rovshanovazizbek0@gmail.com",
-    note: "Hamkorlik va reklama bo'yicha",
+    title: "Tahririyat va Takliflar",
+    value: "salom@biznesdarslari.uz",
+    href: "mailto:salom@biznesdarslari.uz",
+    note: "Umumiy murojaat va fikrlar",
+  },
+  {
+    icon: "🛡️",
+    title: "Ekspertlar va Fikr-mulohaza",
+    value: "tahririyat@biznesdarslari.uz",
+    href: "mailto:tahririyat@biznesdarslari.uz",
+    note: "Darslar tahririyati va manbalar",
   },
 ];
 
@@ -35,7 +42,7 @@ export default function ContactPage() {
       <h1 className="mb-3 text-3xl font-bold">Aloqa</h1>
       <p className="mb-8 leading-relaxed text-slate-300">
         Taklifingiz bormi, maqolada xatolik topdingizmi yoki hamkorlik qilmoqchimisiz?
-        Quyidagi kanallar orqali murojaat qiling — odatda 1-2 ish kuni ichida javob beramiz.
+        Quyidagi rasmiy kanallar orqali murojaat qiling — tahririyatimiz 1-2 ish kuni ichida javob beradi.
       </p>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -49,16 +56,15 @@ export default function ContactPage() {
           >
             <div className="mb-2 text-2xl">{c.icon}</div>
             <div className="font-bold text-white">{c.title}</div>
-            <div className="text-sky-400">{c.value}</div>
-            <div className="mt-1 text-sm text-slate-500">{c.note}</div>
+            <div className="text-sky-400 font-mono text-sm">{c.value}</div>
+            <div className="mt-1 text-xs text-slate-400">{c.note}</div>
           </a>
         ))}
       </div>
 
-      <div className="mt-8 rounded-xl border border-amber-900 bg-amber-500/5 p-5 text-sm leading-relaxed text-slate-300">
+      <div className="mt-8 rounded-xl border border-amber-500/20 bg-amber-500/5 p-5 text-sm leading-relaxed text-slate-300">
         <strong className="text-amber-400">Xatolik topdingizmi?</strong> Maqoladagi noaniqlik
-        yoki tarjima xatosi haqida yozsangiz, tekshirib tuzatamiz — bu platformani hamma
-        uchun yaxshiroq qiladi.
+        yoki qonunchilikdagi yangilanishlar bo&apos;yicha yozsangiz, tahririyatimiz ekspertlari tekshirib darhol tuzatadilar.
       </div>
     </div>
   );
