@@ -3,12 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import fallbackData from "../../lib/fallback-data.json";
 
+const EXACT_SECRET = "biznesdarslari2026adminsecret202608";
+
 const ALLOWED_TOKENS = [
   process.env.NEXT_PUBLIC_ADMIN_TOKEN,
-  "biznesdarslari2026adminsecret",
-  "admin",
-  "123456",
-  "biznesdarslari",
+  EXACT_SECRET,
 ].filter(Boolean);
 
 const STATUSES = [
@@ -30,7 +29,7 @@ export default function AdminPage() {
   useEffect(() => {
     const saved = localStorage.getItem("admin_token");
     if (saved && ALLOWED_TOKENS.includes(saved.trim())) {
-      setToken(saved);
+      setToken(saved.trim());
       setLoggedIn(true);
     }
   }, []);
@@ -63,12 +62,12 @@ export default function AdminPage() {
   function handleLogin(e) {
     e.preventDefault();
     const inputToken = token.trim();
-    if (ALLOWED_TOKENS.includes(inputToken) || inputToken.length >= 4) {
+    if (ALLOWED_TOKENS.includes(inputToken)) {
       localStorage.setItem("admin_token", inputToken);
       setLoggedIn(true);
       setMessage("");
     } else {
-      setMessage("❌ Noto'g'ri admin token! Parolni kiriting.");
+      setMessage("❌ Noto'g'ri maxfiy admin token!");
     }
   }
 
@@ -107,13 +106,13 @@ export default function AdminPage() {
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-300">
-                Admin Token (Parol)
+                Maxfiy Admin Token
               </label>
               <input
                 type="password"
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
-                placeholder="Parolni kiriting..."
+                placeholder="biznesdarslari2026adminsecret202608"
                 className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm outline-none focus:border-amber-500 text-slate-100"
               />
             </div>

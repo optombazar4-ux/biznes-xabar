@@ -21,7 +21,7 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-opus-4-8")
 
 # Admin panelga kirish uchun maxfiy token (X-Admin-Token sarlavhasi yoki JWT orqali).
-ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "biznesdarslari2026adminsecret")
+ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "biznesdarslari2026adminsecret202608")
 UNSAFE_ADMIN_TOKENS = {
     "admin-token-o'zgartiring",
     "maxfiy-admin-token",
