@@ -200,7 +200,19 @@ def _create_dynamic_idea(
     return article
 
 
+from .services.indexer import ping_search_engines
+
+
 def _send_to_telegram_if_enabled(db, article: Article) -> None:
+    # IndexNow (Yandex/Bing) va Instant Indexing signali yuborish
+    try:
+        cat_slug = article.category.slug if article.category else "biznesni-boshlash"
+        article_url = f"https://biznesdarslari.uz/{cat_slug}/{article.slug}"
+        ping_search_engines([article_url])
+        print("   ✓ IndexNow (Yandex/Bing) instant indexing signali yuborildi")
+    except Exception as err:
+        print(f"   ✗ IndexNow xatosi: {err}")
+
     if not (AUTO_PUBLISH and AUTO_TELEGRAM and TELEGRAM_BOT_TOKEN):
         return
     try:
@@ -210,6 +222,7 @@ def _send_to_telegram_if_enabled(db, article: Article) -> None:
         print("   ✓ Telegram kanalga yuborildi")
     except Exception as error:
         print(f"   ✗ Telegram xatosi: {error}")
+
 
 
 def run_pipeline(per_feed: int = 0) -> int:

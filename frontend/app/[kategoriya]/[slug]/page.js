@@ -78,7 +78,35 @@ function jsonLd(article, catSlug) {
       { "@type": "ListItem", position: 3, name: article.title, item: url },
     ].filter(Boolean),
   };
-  return [articleLd, breadcrumbLd];
+
+  const faqLd = article.quiz && article.quiz.length > 0 ? {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: article.quiz.map((q) => ({
+      "@type": "Question",
+      name: q.savol,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: q.variantlar ? q.variantlar[q.togri_indeks ?? q.tofri_indeks ?? 0] : "Batafsil dars sahifasida.",
+      },
+    })),
+  } : null;
+
+  const howToLd = article.practical_note ? {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    name: `${article.title} — Amaliy Yo'riqnoma`,
+    description: article.practical_note,
+    step: [
+      {
+        "@type": "HowToStep",
+        name: "Amaliy Topshiriq",
+        text: article.practical_note,
+      },
+    ],
+  } : null;
+
+  return [articleLd, breadcrumbLd, faqLd, howToLd].filter(Boolean);
 }
 
 export default async function LessonPage({ params }) {
