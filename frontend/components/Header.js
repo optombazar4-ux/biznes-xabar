@@ -67,8 +67,8 @@ export default async function Header() {
             </div>
           </div>
 
-          {/* Horizontally Scrolling Category Pills on Mobile */}
-          <nav className="flex overflow-x-auto gap-2 py-1 text-sm whitespace-nowrap scrollbar-none">
+          {/* Category Navigation Pills (Scrolls on Mobile, Wraps Cleanly on Desktop) */}
+          <nav className="flex overflow-x-auto md:flex-wrap gap-2 py-1 text-sm whitespace-nowrap md:whitespace-normal scrollbar-none">
             <Link
               href="/kalkulyator"
               className="inline-block rounded-full border border-amber-500/40 bg-amber-500/10 px-3.5 py-1 text-xs sm:text-sm font-semibold text-amber-400 hover:bg-amber-500 hover:text-slate-950 transition-all shrink-0"
