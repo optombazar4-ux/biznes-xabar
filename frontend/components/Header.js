@@ -22,9 +22,8 @@ export default function Header() {
       <div className="mx-auto max-w-6xl px-4 py-3">
         <div className="mb-2 flex items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2">
-            <span className="rounded-lg bg-amber-500 p-1.5 text-lg font-black text-slate-950">
-              BD
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.svg" alt="Biznes Darslari Logo" className="h-9 w-9 rounded-lg shadow-sm" />
             <div>
               <span className="text-xl font-extrabold tracking-tight text-white">
                 Biznes<span className="text-amber-400">Darslari</span>
