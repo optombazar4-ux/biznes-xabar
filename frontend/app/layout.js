@@ -98,7 +98,7 @@ export default function RootLayout({ children }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
         />
         <Header />
-        <main className="mx-auto max-w-6xl px-4 pb-16">{children}</main>
+        <main className="mx-auto max-w-6xl px-4 pb-24 md:pb-16">{children}</main>
         <footer className="border-t border-slate-800 py-8 text-center text-sm text-slate-500">
           <div className="mb-3 flex justify-center gap-4 flex-wrap">
             <a href="/haqida" className="text-slate-400 hover:text-white transition-colors">
