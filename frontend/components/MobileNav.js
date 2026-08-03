@@ -35,6 +35,16 @@ export default function MobileNav({ categories = [] }) {
             <span>G&apos;oyalar</span>
           </Link>
 
+          <Link
+            href="/kalkulyator"
+            className={`flex flex-col items-center gap-1 transition-colors ${
+              isCurrent("/kalkulyator") ? "text-amber-400 font-bold" : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <span className="text-lg">🧮</span>
+            <span>Kalkulyator</span>
+          </Link>
+
           <button
             onClick={() => setMenuOpen(true)}
             className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition-colors"
