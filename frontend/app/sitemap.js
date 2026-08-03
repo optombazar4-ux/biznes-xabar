@@ -1,23 +1,11 @@
-import { API_URL } from "../lib/api";
+import { apiGet } from "../lib/api";
 import { SITE_URL } from "../lib/site";
 
-async function fetchJson(url) {
-  try {
-    const res = await fetch(url, { next: { revalidate: 3600 } });
-    return res.ok ? await res.json() : [];
-  } catch (error) {
-    console.error("Sitemap fetch error:", error);
-    return [];
-  }
-}
-
 export default async function sitemap() {
-  const [articles, categories] = await Promise.all([
-    fetchJson(`${API_URL}/api/news?limit=500`),
-    fetchJson(`${API_URL}/api/categories`),
-  ]);
+  const articles = (await apiGet("/api/news", { limit: 1000 })) || [];
+  const categories = (await apiGet("/api/categories")) || [];
 
-  const articleUrls = (articles || []).map((article) => {
+  const articleUrls = articles.map((article) => {
     const catSlug = article.category?.slug || "biznesni-boshlash";
     return {
       url: `${SITE_URL}/${catSlug}/${article.slug}`,
@@ -27,7 +15,7 @@ export default async function sitemap() {
     };
   });
 
-  const categoryUrls = (categories || []).map((cat) => ({
+  const categoryUrls = categories.map((cat) => ({
     url: `${SITE_URL}/${cat.slug}`,
     lastModified: new Date(),
     changeFrequency: "daily",
