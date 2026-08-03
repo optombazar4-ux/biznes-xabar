@@ -1,101 +1,115 @@
-import Link from "next/link";
-import { apiGet } from "../lib/api";
-import MobileNav from "./MobileNav";
+"use client";
 
-export default async function Header() {
-  const categories = (await apiGet("/api/categories")) || [];
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { apiGet } from "../lib/api";
+
+export default function Header() {
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    async function load() {
+      const data = await apiGet("/api/categories");
+      if (data && data.length > 0) {
+        setCategories(data);
+      }
+    }
+    load();
+  }, []);
 
   return (
-    <>
-      <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:py-4">
-          <div className="flex items-center justify-between gap-3">
-            <Link href="/" className="flex items-center gap-2 text-lg sm:text-xl font-bold shrink-0">
-              <img src="/logo.svg" alt="Biznes Darslari logotipi" width={32} height={32} className="sm:w-9 sm:h-9" />
-              <span>
-                Biznes <span className="text-amber-400">Darslari</span>
+    <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/80 backdrop-blur-md">
+      <div className="mx-auto max-w-6xl px-4 py-3">
+        <div className="mb-2 flex items-center justify-between gap-4">
+          <Link href="/" className="flex items-center gap-2">
+            <span className="rounded-lg bg-amber-500 p-1.5 text-lg font-black text-slate-950">
+              BD
+            </span>
+            <div>
+              <span className="text-xl font-extrabold tracking-tight text-white">
+                Biznes<span className="text-amber-400">Darslari</span>
               </span>
-            </Link>
-
-            <div className="hidden md:flex items-center gap-4">
-              <a
-                href="https://t.me/biznesxabari"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-sm text-slate-300 hover:text-sky-400 transition-colors"
-              >
-                📢 Telegram Kanal
-              </a>
-              <a
-                href="https://t.me/Biznesxabar_bot"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-sm text-slate-300 hover:text-amber-400 transition-colors"
-              >
-                🤖 Telegram Bot
-              </a>
-              <form action="/qidiruv" className="relative w-72">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-                  🔍
-                </span>
-                <input
-                  name="q"
-                  placeholder="Darslardan qidiring..."
-                  aria-label="Darslardan qidiruv"
-                  className="w-full rounded-lg border border-slate-700 bg-slate-900 py-2 pl-9 pr-3 text-sm outline-none focus:border-amber-500"
-                />
-              </form>
+              <span className="hidden sm:inline-block ml-2 rounded-full bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-300">
+                .uz
+              </span>
             </div>
+          </Link>
 
-            {/* Mobile Header Quick Buttons */}
-            <div className="flex md:hidden items-center gap-2">
-              <Link
-                href="/qidiruv"
-                className="flex items-center justify-center rounded-lg border border-slate-800 bg-slate-900 p-2 text-slate-300"
-                aria-label="Qidiruv"
-              >
+          {/* Desktop Search Bar */}
+          <div className="hidden md:flex flex-1 max-w-md items-center">
+            <form action="/qidiruv" method="GET" className="relative w-full">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
                 🔍
-              </Link>
-              <a
-                href="https://t.me/biznesxabari"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 rounded-lg bg-sky-500/10 px-2.5 py-1.5 text-xs font-semibold text-sky-400 border border-sky-500/20"
-              >
-                📢 Telegram
-              </a>
-            </div>
+              </span>
+              <input
+                name="q"
+                placeholder="Darslardan qidiring..."
+                aria-label="Darslardan qidiruv"
+                className="w-full rounded-lg border border-slate-700 bg-slate-900 py-2 pl-9 pr-3 text-sm outline-none focus:border-amber-500 text-slate-100"
+              />
+            </form>
           </div>
 
-          {/* Category Navigation Pills (Scrolls on Mobile, Wraps Cleanly on Desktop) */}
-          <nav className="flex overflow-x-auto md:flex-wrap gap-2 py-1 text-sm whitespace-nowrap md:whitespace-normal scrollbar-none">
+          {/* Header Action Buttons */}
+          <div className="flex items-center gap-2">
             <Link
-              href="/kalkulyator"
-              className="inline-block rounded-full border border-amber-500/40 bg-amber-500/10 px-3.5 py-1 text-xs sm:text-sm font-semibold text-amber-400 hover:bg-amber-500 hover:text-slate-950 transition-all shrink-0"
+              href="/qidiruv"
+              className="flex md:hidden items-center justify-center rounded-lg border border-slate-800 bg-slate-900 p-2 text-slate-300"
+              aria-label="Qidiruv"
             >
-              🧮 Biznes Kalkulyatori
+              🔍
             </Link>
-            <Link
-              href="/hamkorlik"
-              className="inline-block rounded-full border border-slate-800 bg-slate-900/60 px-3.5 py-1 text-xs sm:text-sm text-slate-300 hover:border-amber-500 hover:text-white transition-all shrink-0"
+            <a
+              href="https://t.me/biznesxabari"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 rounded-lg bg-sky-500/10 px-3 py-1.5 text-xs font-semibold text-sky-400 border border-sky-500/20 hover:bg-sky-500/20 transition-all"
             >
-              🤝 B2B Hamkorlik
-            </Link>
-            {categories.map((cat) => (
-              <Link
-                key={cat.slug}
-                href={`/${cat.slug}`}
-                className="inline-block rounded-full border border-slate-800 bg-slate-900/60 px-3.5 py-1 text-xs sm:text-sm text-slate-300 hover:border-amber-500 hover:text-white transition-all shrink-0"
-              >
-                {cat.name}
-              </Link>
-            ))}
-          </nav>
+              📢 Telegram
+            </a>
+          </div>
         </div>
-      </header>
 
-      {/* Mobile Fixed Bottom Navigation Bar */}
-      <MobileNav categories={categories} />
-    </>
+        {/* 3 Main Product Pillars Navigation */}
+        <nav className="flex overflow-x-auto md:flex-wrap gap-2 py-1 text-sm whitespace-nowrap md:whitespace-normal scrollbar-none items-center">
+          <Link
+            href="/biznes-goyalari"
+            className="inline-block rounded-full border border-amber-500/50 bg-amber-500/10 px-3.5 py-1 text-xs sm:text-sm font-bold text-amber-400 hover:bg-amber-500 hover:text-slate-950 transition-all shrink-0"
+          >
+            💡 1. Biznes Toping (75+ G&apos;oya)
+          </Link>
+          <Link
+            href="/biznesni-boshlash"
+            className="inline-block rounded-full border border-slate-700 bg-slate-900 px-3.5 py-1 text-xs sm:text-sm font-bold text-slate-200 hover:border-amber-500 transition-all shrink-0"
+          >
+            🎓 2. O&apos;rganing (40+ Dars)
+          </Link>
+          <Link
+            href="/kalkulyator"
+            className="inline-block rounded-full border border-slate-700 bg-slate-900 px-3.5 py-1 text-xs sm:text-sm font-bold text-slate-200 hover:border-amber-500 transition-all shrink-0"
+          >
+            🧮 3. Ishlating (Kalkulyator)
+          </Link>
+          <Link
+            href="/hamkorlik"
+            className="inline-block rounded-full border border-slate-800 bg-slate-950 px-3.5 py-1 text-xs sm:text-sm text-slate-400 hover:text-slate-200 hover:border-slate-700 transition-all shrink-0"
+          >
+            🤝 B2B Hamkorlik
+          </Link>
+
+          <span className="hidden md:inline-block text-slate-700">|</span>
+
+          {categories.map((cat) => (
+            <Link
+              key={cat.slug}
+              href={`/${cat.slug}`}
+              className="inline-block rounded-full border border-slate-800/80 bg-slate-900/40 px-3 py-1 text-xs text-slate-300 hover:border-amber-500/50 hover:text-white transition-all shrink-0"
+            >
+              {cat.name}
+            </Link>
+          ))}
+        </nav>
+      </div>
+    </header>
   );
 }

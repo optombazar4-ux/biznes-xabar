@@ -1,12 +1,22 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { apiGet } from "../lib/api";
 
-export default function MobileNav({ categories = [] }) {
-  const [menuOpen, setMenuOpen] = useState(false);
+export default function MobileNav() {
   const pathname = usePathname();
+  const [categories, setCategories] = useState([]);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      const data = await apiGet("/api/categories");
+      if (data && data.length > 0) setCategories(data);
+    }
+    load();
+  }, []);
 
   const isCurrent = (path) => pathname === path;
 
@@ -36,6 +46,16 @@ export default function MobileNav({ categories = [] }) {
           </Link>
 
           <Link
+            href="/biznesni-boshlash"
+            className={`flex flex-col items-center gap-1 transition-colors ${
+              isCurrent("/biznesni-boshlash") ? "text-amber-400 font-bold" : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <span className="text-lg">🎓</span>
+            <span>Darslar</span>
+          </Link>
+
+          <Link
             href="/kalkulyator"
             className={`flex flex-col items-center gap-1 transition-colors ${
               isCurrent("/kalkulyator") ? "text-amber-400 font-bold" : "text-slate-400 hover:text-slate-200"
@@ -52,59 +72,55 @@ export default function MobileNav({ categories = [] }) {
             <span className="text-lg">📂</span>
             <span>Bo&apos;limlar</span>
           </button>
-
-          <Link
-            href="/qidiruv"
-            className={`flex flex-col items-center gap-1 transition-colors ${
-              isCurrent("/qidiruv") ? "text-amber-400 font-bold" : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <span className="text-lg">🔍</span>
-            <span>Qidiruv</span>
-          </Link>
         </div>
       </div>
 
-      {/* Bo'limlar Drawer Modali (Slide-Up Modal) */}
+      {/* Slide-Up Category Drawer Modal */}
       {menuOpen && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/70 backdrop-blur-sm md:hidden">
-          <div className="max-h-[80vh] w-full overflow-y-auto rounded-t-2xl border-t border-slate-800 bg-slate-900 p-6 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-lg font-bold text-slate-100">📂 Bo&apos;limlar Katalogi</h3>
+          <div className="rounded-t-2xl border-t border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="font-bold text-slate-100 text-base">📚 Barcha Yo&apos;nalishlar</h3>
               <button
                 onClick={() => setMenuOpen(false)}
-                className="rounded-full bg-slate-800 p-2 text-slate-400 hover:text-white"
+                className="rounded-full bg-slate-800 p-1.5 text-slate-400 hover:text-white"
               >
                 ✕
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <Link
+                href="/biznes-goyalari"
+                onClick={() => setMenuOpen(false)}
+                className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 font-bold text-amber-400 col-span-2"
+              >
+                💡 Biznes Toping (75+ G&apos;oya)
+              </Link>
+              <Link
+                href="/kalkulyator"
+                onClick={() => setMenuOpen(false)}
+                className="rounded-xl border border-slate-800 bg-slate-950 p-3 font-semibold text-slate-200 col-span-2"
+              >
+                🧮 Biznes Kalkulyatori
+              </Link>
+              <Link
+                href="/hamkorlik"
+                onClick={() => setMenuOpen(false)}
+                className="rounded-xl border border-slate-800 bg-slate-950 p-3 font-semibold text-slate-200 col-span-2"
+              >
+                🤝 B2B Hamkorlik (Media Kit)
+              </Link>
               {categories.map((cat) => (
                 <Link
                   key={cat.slug}
                   href={`/${cat.slug}`}
                   onClick={() => setMenuOpen(false)}
-                  className={`flex flex-col rounded-xl border p-3.5 transition-all ${
-                    isCurrent(`/${cat.slug}`)
-                      ? "border-amber-500 bg-amber-500/10 text-amber-400 font-bold"
-                      : "border-slate-800 bg-slate-950/60 text-slate-300 hover:border-slate-700"
-                  }`}
+                  className="rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-slate-300 hover:border-amber-500"
                 >
-                  <span className="text-sm font-semibold">{cat.name}</span>
+                  {cat.name}
                 </Link>
               ))}
-            </div>
-
-            <div className="mt-6 border-t border-slate-800 pt-4 text-center">
-              <a
-                href="https://t.me/biznesxabari"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-sky-500/10 px-4 py-2.5 text-sm font-semibold text-sky-400 border border-sky-500/20 w-full"
-              >
-                📢 Telegram Kanalimizga A&apos;zo Bo&apos;ling
-              </a>
             </div>
           </div>
         </div>
