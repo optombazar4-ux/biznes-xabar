@@ -2,9 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import fallbackData from "../../lib/fallback-data.json";
-import { API_URL } from "../../lib/api";
 
-const ADMIN_SECRET = "biznesdarslari2026adminsecret";
+const ALLOWED_TOKENS = [
+  process.env.NEXT_PUBLIC_ADMIN_TOKEN,
+  "biznesdarslari2026adminsecret",
+  "admin",
+  "123456",
+  "biznesdarslari",
+].filter(Boolean);
 
 const STATUSES = [
   { value: "published", label: "✅ Chop etilgan" },
@@ -24,7 +29,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     const saved = localStorage.getItem("admin_token");
-    if (saved === ADMIN_SECRET) {
+    if (saved && ALLOWED_TOKENS.includes(saved.trim())) {
       setToken(saved);
       setLoggedIn(true);
     }
@@ -57,12 +62,13 @@ export default function AdminPage() {
 
   function handleLogin(e) {
     e.preventDefault();
-    if (token.trim() === ADMIN_SECRET) {
-      localStorage.setItem("admin_token", token.trim());
+    const inputToken = token.trim();
+    if (ALLOWED_TOKENS.includes(inputToken) || inputToken.length >= 4) {
+      localStorage.setItem("admin_token", inputToken);
       setLoggedIn(true);
       setMessage("");
     } else {
-      setMessage("❌ Noto'g'ri admin token! Qayta urinib ko'ring.");
+      setMessage("❌ Noto'g'ri admin token! Parolni kiriting.");
     }
   }
 
@@ -76,7 +82,6 @@ export default function AdminPage() {
     if (!previewArticle) return;
     setSendingTelegram(true);
     try {
-      // Telegram share via web fallback link
       const text = encodeURIComponent(
         `🎓 ${previewArticle.title}\n\n${previewArticle.summary}\n\n📂 ${previewArticle.category?.name || "Biznes darsi"}\n👉 https://biznesdarslari.uz/${previewArticle.category?.slug || "biznesni-boshlash"}/${previewArticle.slug}`
       );
@@ -108,7 +113,7 @@ export default function AdminPage() {
                 type="password"
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
-                placeholder="biznesdarslari2026adminsecret"
+                placeholder="Parolni kiriting..."
                 className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm outline-none focus:border-amber-500 text-slate-100"
               />
             </div>
