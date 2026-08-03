@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ArticleCard from "../components/ArticleCard";
 import TelegramBanner from "../components/TelegramBanner";
+import SmartMatcher from "../components/SmartMatcher";
 import { apiGet } from "../lib/api";
 
 // Har bir kurikulum bo'limi uchun ikonka
@@ -32,22 +33,20 @@ export default async function HomePage() {
   const hasLessons = (latest || []).length > 0;
 
   return (
-    <div className="py-8">
+    <div className="py-8 space-y-10">
       {/* Hero */}
-      <section className="mb-8 rounded-2xl border border-slate-800 bg-gradient-to-br from-amber-950/40 to-slate-900 p-8 text-center">
+      <section className="rounded-2xl border border-slate-800 bg-gradient-to-br from-amber-950/40 to-slate-900 p-8 text-center">
         <h1 className="mx-auto max-w-2xl text-2xl font-bold leading-tight sm:text-3xl">
           O&apos;zbekistonda biznes ochish va yuritishni o&apos;rganing
         </h1>
-        <p className="mx-auto mt-3 max-w-2xl leading-relaxed text-slate-300">
-          Jahon tajribasi asosida tayyorlangan amaliy biznes darslari — biznesni boshlash,
-          moliya, marketing, sotuv, boshqaruv va onlayn biznes bo&apos;yicha.
+        <p className="mx-auto mt-3 max-w-xl text-slate-300 text-sm sm:text-base">
+          113+ ta noldan tayyorlangan bepul darslar, real soliq va huquqiy yo&apos;riqnomalar hamda 75+ verifikatsiya qilingan biznes g&apos;oyalari.
         </p>
-        <Link
-          href="/biznesni-boshlash"
-          className="mt-6 inline-block rounded-xl bg-amber-500 px-6 py-3 font-bold text-slate-950 transition hover:bg-amber-400"
-        >
-          🎓 Bepul o&apos;rganishni boshlash
-        </Link>
+      </section>
+
+      {/* AI Smart Business Matcher */}
+      <section>
+        <SmartMatcher />
       </section>
 
       {/* Telegram Obuna Banneri */}
