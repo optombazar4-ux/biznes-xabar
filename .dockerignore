@@ -1,0 +1,15 @@
+# Root kontekstli build'lar uchun (masalan `bot` service: context: .)
+.git
+.gitignore
+node_modules
+frontend/node_modules
+frontend/.next
+backend/.venv
+*.db
+.env
+.env.*
+__pycache__
+*.pyc
+.pytest_cache
+.npm-cache-codex
+media
