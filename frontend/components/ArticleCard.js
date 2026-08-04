@@ -13,43 +13,61 @@ export default function ArticleCard({ article, compact = false }) {
     return (
       <Link
         href={href}
-        className="block rounded-lg border border-slate-800 p-3 hover:border-amber-600"
+        className="group block rounded-xl border border-slate-800/80 bg-slate-900/40 p-3.5 transition-all duration-200 hover:border-amber-500/50 hover:bg-slate-900/80 hover:shadow-md hover:shadow-amber-500/5"
       >
-        <div className="mb-1 text-xs text-slate-400">{category}</div>
-        <div className="text-sm font-medium leading-snug">{article.title}</div>
+        <div className="mb-1 text-[11px] font-medium text-amber-400/90">{category}</div>
+        <div className="text-sm font-semibold leading-snug text-slate-200 group-hover:text-white transition-colors">
+          {article.title}
+        </div>
       </Link>
     );
   }
 
   return (
-    <article className="flex flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900/60 transition hover:border-amber-600">
-      {article.image_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={article.image_url} alt="" className="h-40 w-full object-cover" />
-      ) : (
-        <div className="flex h-40 w-full items-center justify-center bg-gradient-to-br from-amber-950 to-slate-900 text-5xl">
-          🎓
-        </div>
-      )}
-      <div className="flex flex-1 flex-col p-5">
-        <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
-          <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 font-semibold text-amber-400">
+    <article className="group flex flex-col overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/50 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-500/60 hover:shadow-xl hover:shadow-amber-500/10">
+      <Link href={href} className="relative block h-44 overflow-hidden bg-slate-950">
+        {article.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={article.image_url}
+            alt=""
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-amber-950/70 via-slate-900 to-slate-950 text-5xl transition-transform duration-500 group-hover:scale-105">
+            🎓
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+        <div className="absolute top-3 left-3 flex items-center gap-1.5">
+          <span className="rounded-full border border-amber-500/30 bg-slate-950/80 px-2.5 py-0.5 text-[11px] font-bold text-amber-400 backdrop-blur-md shadow-sm">
             {category}
           </span>
-          <span className="text-slate-500">{level}</span>
         </div>
-        <Link href={href}>
-          <h2 className="mb-2 text-lg font-semibold leading-snug hover:text-amber-400">
+      </Link>
+      <div className="flex flex-1 flex-col p-5">
+        <div className="mb-2 flex items-center gap-2 text-xs text-slate-400">
+          <span className="rounded-md bg-slate-800/80 px-2 py-0.5 text-[10px] font-medium text-slate-300">
+            {level}
+          </span>
+          <span>•</span>
+          <span>⏱ {minutes} min o&apos;qish</span>
+        </div>
+        <Link href={href} className="group/title">
+          <h2 className="mb-2 text-base font-bold leading-snug text-slate-100 group-hover/title:text-amber-400 transition-colors line-clamp-2">
             {article.title}
           </h2>
         </Link>
-        <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-slate-400">
+        <p className="mb-4 line-clamp-2 text-xs leading-relaxed text-slate-400">
           {article.summary}
         </p>
-        <div className="mt-auto flex items-center justify-between text-xs text-slate-500">
-          <span>⏱ {minutes} daqiqa{date ? ` · ${date}` : ""}</span>
-          <Link href={href} className="font-medium text-amber-400 hover:underline">
-            O&apos;qish →
+        <div className="mt-auto flex items-center justify-between border-t border-slate-800/60 pt-3 text-xs text-slate-400">
+          <span>{date || "Amaliy dars"}</span>
+          <Link
+            href={href}
+            className="flex items-center gap-1 font-semibold text-amber-400 group-hover:translate-x-1 transition-transform"
+          >
+            Darsni o&apos;qish <span className="text-sm">→</span>
           </Link>
         </div>
       </div>
