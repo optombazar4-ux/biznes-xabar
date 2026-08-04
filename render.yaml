@@ -49,10 +49,10 @@ services:
       - key: RUN_BACKGROUND_SERVICES
         value: "true"
       - key: FRONTEND_ORIGIN
-        value: "https://biznes-xabar.vercel.app"
+        value: "https://biznesdarslari.uz"
       - key: CORS_ORIGINS
-        value: "https://biznes-xabar.vercel.app"
+        value: "https://biznesdarslari.uz,https://biznes-xabar.vercel.app"
       - key: BACKEND_PUBLIC_URL
         sync: false
       - key: SITE_URL
-        value: "https://biznes-xabar.vercel.app"
+        value: "https://biznesdarslari.uz"
