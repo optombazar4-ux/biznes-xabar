@@ -24,13 +24,17 @@ const USER_GOALS = [
 ];
 
 export default async function HomePage() {
-  const [latest, categories, trends] = await Promise.all([
+  const [latest, categories, trends, stats] = await Promise.all([
     apiGet("/api/news", { limit: 12 }),
     apiGet("/api/categories"),
     apiGet("/api/news/trends"),
+    apiGet("/api/news/stats"),
   ]);
 
   const hasLessons = (latest || []).length > 0;
+  // Haqiqiy sonlar API'dan kelmasa statik reklama raqamlariga tushamiz
+  const totalLessons = stats?.jami_darslar || 0;
+  const totalIdeas = stats?.biznes_goyalar || 0;
 
   return (
     <div className="py-6 space-y-10">
@@ -40,25 +44,25 @@ export default async function HomePage() {
         
         <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1 text-xs font-bold text-amber-400 mb-4 shadow-sm backdrop-blur-md">
           <span className="flex h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-          <span>O&apos;zbekiston uchun #1 Bepul Biznes Ta&apos;lim Platformasi</span>
+          <span>O'zbekiston uchun #1 Bepul Biznes Ta'lim Platformasi</span>
         </div>
 
         <h1 className="mx-auto max-w-3xl text-2xl font-black tracking-tight leading-tight sm:text-4xl lg:text-5xl text-white">
-          O&apos;zbekistonda biznes ochish va yuritishni <span className="bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 bg-clip-text text-transparent">noldan o&apos;rganing</span>
+          O'zbekistonda biznes ochish va yuritishni <span className="bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 bg-clip-text text-transparent">noldan o'rganing</span>
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-slate-300 text-sm sm:text-base leading-relaxed">
-          113+ ta amaliy bepul darslar, soliq va huquqiy yo&apos;riqnomalar, moliyaviy kalkulyatorlar hamda 75+ verifikatsiya qilingan biznes g&apos;oyalari.
+          113+ ta amaliy bepul darslar, soliq va huquqiy yo'riqnomalar, moliyaviy kalkulyatorlar hamda 75+ verifikatsiya qilingan biznes g'oyalari.
         </p>
 
         {/* Quick Stats Badges */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-xs sm:text-sm font-semibold text-slate-300">
           <div className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-2 backdrop-blur-sm">
             <span className="text-amber-400 text-base">📚</span>
-            <span>113+ Amaliy Dars</span>
+            <span>{totalLessons ? `${totalLessons}+ Amaliy Dars` : "113+ Amaliy Dars"}</span>
           </div>
           <div className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-2 backdrop-blur-sm">
             <span className="text-amber-400 text-base">💡</span>
-            <span>75+ Biznes G&apos;oya</span>
+            <span>{totalIdeas ? `${totalIdeas}+ Biznes G'oya` : "75+ Biznes G'oya"}</span>
           </div>
           <div className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-2 backdrop-blur-sm">
             <span className="text-amber-400 text-base">🧮</span>
@@ -79,7 +83,7 @@ export default async function HomePage() {
       <section className="mb-10">
         <div className="mb-4 text-center">
           <h2 className="text-lg sm:text-xl font-bold text-slate-100">🎯 Qaysi maqsad bilan keldingiz?</h2>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">Sizga mos dars va yo&apos;riqnomani darhol tanlang</p>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">Sizga mos dars va yo'riqnomani darhol tanlang</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {USER_GOALS.map((goal) => (
@@ -104,7 +108,7 @@ export default async function HomePage() {
             <section className="mb-10">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-xl font-extrabold text-white flex items-center gap-2">
-                  <span>📚</span> Yo&apos;nalishlar Bo&apos;yicha Darslar
+                  <span>📚</span> Yo'nalishlar Bo'yicha Darslar
                 </h2>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -133,10 +137,10 @@ export default async function HomePage() {
           <section>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xl font-extrabold text-white flex items-center gap-2">
-                <span>🆕</span> So&apos;nggi Yangi Darslar
+                <span>🆕</span> So'nggi Yangi Darslar
               </h2>
               <Link href="/biznesni-boshlash" className="text-xs font-semibold text-amber-400 hover:underline">
-                Barchasini ko&apos;rish →
+                Barchasini ko'rish →
               </Link>
             </div>
 

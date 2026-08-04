@@ -128,10 +128,10 @@ def generate_article_audio(slug: str, title: str, summary: str, practical_note: 
         if _generate_gemini_audio(clean_text, wav_filepath):
             return f"{BACKEND_PUBLIC_URL}/media/audio/{wav_filename}"
 
-    # 5. gTTS Fallback
+    # 5. gTTS Fallback (o'zbek tili)
     try:
         from gtts import gTTS
-        tts = gTTS(text=clean_text[:500], lang="tr")
+        tts = gTTS(text=clean_text[:500], lang="uz")
         tts.save(str(mp3_filepath))
         if mp3_filepath.exists() and mp3_filepath.stat().st_size > 500:
             return f"{BACKEND_PUBLIC_URL}/media/audio/{mp3_filename}"

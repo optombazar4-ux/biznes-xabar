@@ -31,6 +31,7 @@ from .config import (
     AUTO_PUBLISH_MIN_IMPORTANCE,
     AUTO_TELEGRAM,
     AUTO_TELEGRAM_MIN_IMPORTANCE,
+    FRONTEND_ORIGIN,
     RSS_IDEA_ENABLED,
     TELEGRAM_BOT_TOKEN,
 )
@@ -228,7 +229,7 @@ def _send_to_telegram_if_enabled(db, article: Article) -> None:
     # IndexNow (Yandex/Bing) va Instant Indexing signali yuborish
     try:
         cat_slug = article.category.slug if article.category else "biznesni-boshlash"
-        article_url = f"https://biznesdarslari.uz/{cat_slug}/{article.slug}"
+        article_url = f"{FRONTEND_ORIGIN.rstrip('/')}/{cat_slug}/{article.slug}"
         ping_search_engines([article_url])
         print("   ✓ IndexNow (Yandex/Bing) instant indexing signali yuborildi")
     except Exception as err:

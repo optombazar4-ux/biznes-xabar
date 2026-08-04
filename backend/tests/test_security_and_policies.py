@@ -20,6 +20,19 @@ from app.routers.news import _matcher_score
 from app.schemas import ArticleUpdate
 from app.database import Base
 from sqlalchemy import create_engine
+from alembic.config import Config
+from alembic.script import ScriptDirectory
+
+
+def _migration_head() -> str:
+    """Alembic reviziyalarining joriy head'ini qaytaradi.
+
+    Qattiq yozilgan reviziya nomlari o'rniga ishlatiladi — yangi migratsiya
+    qo'shilganda ham testlar sinmaydi.
+    """
+    backend_dir = Path(__file__).resolve().parents[1]
+    config = Config(str(backend_dir / "alembic.ini"))
+    return ScriptDirectory.from_config(config).get_current_head()
 
 
 class AdminSecurityTests(unittest.TestCase):
@@ -123,7 +136,7 @@ class MigrationBootstrapTests(unittest.TestCase):
                 revision = connection.execute(
                     "SELECT version_num FROM alembic_version"
                 ).fetchone()[0]
-            self.assertEqual(revision, "0002_add_quiz_and_subscriptions")
+            self.assertEqual(revision, _migration_head())
 
     def test_existing_current_schema_is_safely_stamped(self):
         from tempfile import TemporaryDirectory
@@ -138,7 +151,7 @@ class MigrationBootstrapTests(unittest.TestCase):
                 revision = connection.execute(
                     "SELECT version_num FROM alembic_version"
                 ).fetchone()[0]
-            self.assertEqual(revision, "0002_add_quiz_and_subscriptions")
+            self.assertEqual(revision, _migration_head())
 
 
 if __name__ == "__main__":

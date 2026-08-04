@@ -191,6 +191,19 @@ def _matcher_score(article: Article, budget: str, location: str, sector: str) ->
     return score
 
 
+@router.get("/stats")
+def lesson_stats(db: Session = Depends(get_db)):
+    """Ommaviy statistika — bosh sahifa uchun (darslar va g'oyalar soni)."""
+    total = published(db).count()
+    ideas = (
+        published(db)
+        .join(Category)
+        .filter(Category.slug == "biznes-goyalari")
+        .count()
+    )
+    return {"jami_darslar": total, "biznes_goyalar": ideas}
+
+
 @router.get("/ideas/match", response_model=list[ArticleOut])
 def match_business_ideas(
     budget: str = Query(pattern="^(low|medium|large)$"),

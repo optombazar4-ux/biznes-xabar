@@ -45,7 +45,7 @@ TREND_FEEDS = [
 ATOM = "{http://www.w3.org/2005/Atom}"
 CONTENT_NS = "{http://purl.org/rss/1.0/modules/content/}"
 HEADERS = {
-    "User-Agent": "BiznesXabar/2.0 (+https://biznes-xabar.vercel.app)",
+    "User-Agent": "BiznesXabar/2.0 (+https://biznesdarslari.uz)",
     "Accept": "application/rss+xml, application/atom+xml, application/xml, text/xml",
 }
 

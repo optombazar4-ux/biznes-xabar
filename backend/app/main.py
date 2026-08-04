@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import sys
 from contextlib import asynccontextmanager
@@ -9,6 +10,15 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
 if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="backslashreplace")
+
+# Strukturalangan loglar: vaqt + daraja + modul + xabar.
+# LOG_LEVEL=DEBUG bilan batafsil, INFO (standart) bilan yetarli darajada.
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s | %(levelname)-7s | %(name)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger("biznesdarslari")
 
 
 from fastapi import FastAPI
@@ -46,17 +56,17 @@ async def pipeline_loop_task():
         PIPELINE_STATE["status"] = "running"
         PIPELINE_STATE["last_started_at"] = datetime.now(timezone.utc).isoformat()
         try:
-            print("⏳ Running background lessons pipeline...")
+            logger.info("Running background lessons pipeline...")
             loop = asyncio.get_running_loop()
             saved = await loop.run_in_executor(None, run_pipeline)
             PIPELINE_STATE["status"] = "ok"
             PIPELINE_STATE["last_completed_at"] = datetime.now(timezone.utc).isoformat()
             PIPELINE_STATE["last_saved"] = saved
-            print(f"✅ Pipeline done. Created {saved} lessons.")
+            logger.info("Pipeline done. Created %s lessons.", saved)
         except Exception as e:
             PIPELINE_STATE["status"] = "error"
             PIPELINE_STATE["last_error_at"] = datetime.now(timezone.utc).isoformat()
-            print(f"❌ Pipeline loop error: {e}")
+            logger.exception("Pipeline loop error: %s", e)
 
         interval = int(os.getenv("PIPELINE_INTERVAL", "3600"))
         await asyncio.sleep(interval)
@@ -65,10 +75,10 @@ async def pipeline_loop_task():
 async def bot_task():
     await asyncio.sleep(5)
     try:
-        print("🤖 Starting background Telegram Bot...")
+        logger.info("Starting background Telegram Bot...")
         await run_bot()
     except Exception as e:
-        print(f"❌ Telegram Bot error: {e}")
+        logger.exception("Telegram Bot error: %s", e)
 
 
 async def keep_alive_task():
@@ -79,7 +89,7 @@ async def keep_alive_task():
         f"{BACKEND_PUBLIC_URL.rstrip('/')}/health",
         FRONTEND_ORIGIN.rstrip("/"),
     ]
-    print("⚡ Anti-Sleep (Keep-Alive Heartbeat) servisi ishga tushdi.")
+    logger.info("Anti-Sleep (Keep-Alive Heartbeat) service started.")
     while True:
         await asyncio.sleep(300)  # 5 daqiqa
         for url in urls:
@@ -109,7 +119,7 @@ async def lifespan(app: FastAPI):
         if os.getenv("TELEGRAM_BOT_TOKEN"):
             bg_tasks.append(asyncio.create_task(bot_task()))
         else:
-            print("⚠️ TELEGRAM_BOT_TOKEN is not set. Bot background task will not start.")
+            logger.warning("TELEGRAM_BOT_TOKEN is not set. Bot background task will not start.")
         
     yield
     

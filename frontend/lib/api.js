@@ -69,6 +69,15 @@ export async function apiGet(path, params = {}) {
   if (path === "/api/categories") {
     return fallbackData.categories || [];
   }
+  if (path === "/api/news/stats") {
+    const list = fallbackData.articles || [];
+    return {
+      jami_darslar: list.length,
+      biznes_goyalar: list.filter(
+        (a) => a.category?.slug === "biznes-goyalari"
+      ).length,
+    };
+  }
   if (path.startsWith("/api/news/") && path.endsWith("/related")) {
     const parts = path.split("/");
     const slug = parts[3];
