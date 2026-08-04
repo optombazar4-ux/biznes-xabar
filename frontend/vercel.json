@@ -1,5 +1,13 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "installCommand": "npm install"
+  "installCommand": "npm install",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.biznesdarslari.uz" }],
+      "destination": "https://biznesdarslari.uz/:path*",
+      "permanent": true
+    }
+  ]
 }
