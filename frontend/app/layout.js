@@ -20,7 +20,7 @@ export const metadata = {
   description: DESCRIPTION,
   applicationName: SITE_NAME,
   verification: {
-    google: "Y9JgF4k9FHCfTUO6Owabe9ctAJM8OHJusR4Bc7Sn0Zg",
+    google: "jEeD26Njx-UkuDnHIGe8CH5eoTfU03l1f1HSn934j9Y",
   },
 
   alternates: {
