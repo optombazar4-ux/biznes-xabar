@@ -9,6 +9,12 @@ def require_admin(
     x_admin_token: str = Header(default=""),
 ):
     """Admin huquqini tekshiradi: Authorization Bearer JWT token yoki X-Admin-Token header."""
+    if not admin_is_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="Admin panel xavfsiz token sozlanguncha o'chirilgan",
+        )
+
     # 1. Bearer JWT token tekshiruvi
     if authorization.startswith("Bearer "):
         token = authorization[7:].strip()
@@ -18,13 +24,7 @@ def require_admin(
 
     # 2. Eskicha X-Admin-Token mosligi
     if x_admin_token:
-        if not admin_is_configured():
-            raise HTTPException(
-                status_code=503,
-                detail="Admin panel xavfsiz token sozlanguncha o'chirilgan",
-            )
         if secrets.compare_digest(x_admin_token, ADMIN_TOKEN):
             return {"role": "admin", "sub": "legacy-header"}
 
     raise HTTPException(status_code=401, detail="Ruxsat berilmadi: Noto'g'ri token yoki login talab qilinadi")
-

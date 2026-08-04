@@ -1,14 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import fallbackData from "../../lib/fallback-data.json";
 
-const EXACT_SECRET = "biznesdarslari2026adminsecret202608";
-
-const ALLOWED_TOKENS = [
-  process.env.NEXT_PUBLIC_ADMIN_TOKEN,
-  EXACT_SECRET,
-].filter(Boolean);
+const TOKEN_KEY = "biznesdarslari_admin_session";
 
 const STATUSES = [
   { value: "published", label: "✅ Chop etilgan" },
@@ -16,146 +10,179 @@ const STATUSES = [
   { value: "rejected", label: "❌ Rad etilgan" },
 ];
 
+async function readJson(response) {
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.detail || `Server xatosi (${response.status})`);
+  }
+  return data;
+}
+
 export default function AdminPage() {
-  const [token, setToken] = useState("");
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [password, setPassword] = useState("");
+  const [accessToken, setAccessToken] = useState("");
+  const [ready, setReady] = useState(false);
   const [status, setStatus] = useState("published");
   const [articles, setArticles] = useState([]);
   const [stats, setStats] = useState(null);
   const [message, setMessage] = useState("");
-  const [previewArticle, setPreviewArticle] = useState(null);
-  const [sendingTelegram, setSendingTelegram] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [editing, setEditing] = useState(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem("admin_token");
-    if (saved && ALLOWED_TOKENS.includes(saved.trim())) {
-      setToken(saved.trim());
-      setLoggedIn(true);
-    }
+    setAccessToken(sessionStorage.getItem(TOKEN_KEY) || "");
+    setReady(true);
   }, []);
 
-  const loadData = useCallback(() => {
-    const all = fallbackData.articles || [];
-    const published = all.filter((a) => a.status === "published" || !a.status);
-    const pending = all.filter((a) => a.status === "pending");
-    const rejected = all.filter((a) => a.status === "rejected");
-    const telegramCount = all.filter((a) => a.sent_to_telegram).length;
+  const logout = useCallback((notice = "") => {
+    sessionStorage.removeItem(TOKEN_KEY);
+    setAccessToken("");
+    setArticles([]);
+    setStats(null);
+    setEditing(null);
+    setMessage(notice);
+  }, []);
 
-    setStats({
-      jami: all.length,
-      kutilmoqda: pending.length,
-      chop_etilgan: published.length,
-      rad_etilgan: rejected.length,
-      telegramga_yuborilgan: telegramCount,
-    });
+  const adminFetch = useCallback(
+    async (path, options = {}) => {
+      const response = await fetch(`/api/admin${path}`, {
+        ...options,
+        cache: "no-store",
+        headers: {
+          ...(options.body ? { "Content-Type": "application/json" } : {}),
+          ...options.headers,
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (response.status === 401 || response.status === 403) {
+        logout("Sessiya tugadi. Qayta kiring.");
+      }
+      return readJson(response);
+    },
+    [accessToken, logout],
+  );
 
-    if (status === "published") setArticles(published);
-    else if (status === "pending") setArticles(pending);
-    else if (status === "rejected") setArticles(rejected);
-    else setArticles(all);
-  }, [status]);
+  const loadData = useCallback(async () => {
+    if (!accessToken) return;
+    setLoading(true);
+    try {
+      const [articleData, statsData] = await Promise.all([
+        adminFetch(`/articles?status=${encodeURIComponent(status)}&limit=100`),
+        adminFetch("/stats"),
+      ]);
+      setArticles(articleData);
+      setStats(statsData);
+    } catch (error) {
+      setMessage(`❌ ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  }, [accessToken, adminFetch, status]);
 
   useEffect(() => {
-    if (loggedIn) loadData();
-  }, [loggedIn, loadData]);
+    loadData();
+  }, [loadData]);
 
-  function handleLogin(e) {
-    e.preventDefault();
-    const inputToken = token.trim();
-    if (ALLOWED_TOKENS.includes(inputToken)) {
-      localStorage.setItem("admin_token", inputToken);
-      setLoggedIn(true);
-      setMessage("");
-    } else {
-      setMessage("❌ Noto'g'ri maxfiy admin token!");
-    }
-  }
-
-  function handleLogout() {
-    localStorage.removeItem("admin_token");
-    setLoggedIn(false);
-    setToken("");
-  }
-
-  async function handleSendTelegram() {
-    if (!previewArticle) return;
-    setSendingTelegram(true);
+  async function handleLogin(event) {
+    event.preventDefault();
+    setLoading(true);
+    setMessage("");
     try {
-      const tagsText = (previewArticle.tags || [])
-        .map((t) => `#${t.replace(/\s+/g, "_")}`)
-        .join(" ");
-
-      const postText = `🎓 ${previewArticle.title}
-
-${previewArticle.summary}
-
-💡 Practical Note: ${previewArticle.practical_note || "Amaliy darslik va yo'riqnoma"}
-
-📂 Bo'lim: ${previewArticle.category?.name || "Biznes Darslari"}
-${tagsText ? `🏷 ${tagsText}\n` : ""}
-👉 Darsni to'liq o'qish: https://biznesdarslari.uz/${previewArticle.category?.slug || "biznesni-boshlash"}/${previewArticle.slug}
-
-📢 Rasmiy kanalimiz: @biznesxabari`;
-
-      await navigator.clipboard.writeText(postText);
-      window.open(`https://t.me/share/url?url=${encodeURIComponent(`https://biznesdarslari.uz/${previewArticle.category?.slug || "biznesni-boshlash"}/${previewArticle.slug}`)}&text=${encodeURIComponent(postText)}`, "_blank");
-      setMessage("✅ Telegram post nusxalandi va ulashish oynasi ochildi!");
-      setPreviewArticle(null);
-    } catch (err) {
-      setMessage(`❌ ${err.message}`);
+      const response = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: password }),
+      });
+      const data = await readJson(response);
+      sessionStorage.setItem(TOKEN_KEY, data.access_token);
+      setAccessToken(data.access_token);
+      setPassword("");
+    } catch (error) {
+      setMessage(`❌ ${error.message}`);
     } finally {
-      setSendingTelegram(false);
+      setLoading(false);
     }
   }
 
-  if (!loggedIn) {
+  async function runAction(article, action, successMessage) {
+    if (action === "delete" && !window.confirm(`“${article.title}” o‘chirilsinmi?`)) {
+      return;
+    }
+    setLoading(true);
+    try {
+      await adminFetch(`/articles/${article.id}${action === "delete" ? "" : `/${action}`}`, {
+        method: action === "delete" ? "DELETE" : "POST",
+      });
+      setMessage(`✅ ${successMessage}`);
+      await loadData();
+    } catch (error) {
+      setMessage(`❌ ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function saveArticle(event) {
+    event.preventDefault();
+    setLoading(true);
+    try {
+      await adminFetch(`/articles/${editing.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          title: editing.title,
+          seo_title: editing.seo_title,
+          summary: editing.summary,
+          content: editing.content,
+          practical_note: editing.practical_note,
+          importance: Number(editing.importance),
+        }),
+      });
+      setEditing(null);
+      setMessage("✅ Dars saqlandi");
+      await loadData();
+    } catch (error) {
+      setMessage(`❌ ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!ready) return null;
+
+  if (!accessToken) {
     return (
       <div className="mx-auto max-w-sm py-24">
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-2xl backdrop-blur-md">
-          <h1 className="mb-2 text-xl font-bold text-slate-100 text-center">🔐 Admin Panel</h1>
-          <p className="mb-6 text-xs text-slate-400 text-center">
-            Biznes Darslari ma&apos;muriyat paneli
+        <form onSubmit={handleLogin} className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-2xl">
+          <h1 className="mb-2 text-center text-xl font-bold">🔐 Admin panel</h1>
+          <p className="mb-6 text-center text-xs text-slate-400">
+            Kirish server tomonidan xavfsiz tekshiriladi.
           </p>
-
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-300">
-                Maxfiy Admin Token
-              </label>
-              <input
-                type="password"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                placeholder="Maxfiy parolni kiriting..."
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm outline-none focus:border-amber-500 text-slate-100"
-              />
-            </div>
-
-            {message && <div className="text-xs text-red-400 font-medium">{message}</div>}
-
-            <button
-              type="submit"
-              className="w-full rounded-lg bg-amber-500 py-2.5 font-bold text-slate-950 hover:bg-amber-400 transition-colors"
-            >
-              Kirish
-            </button>
-          </form>
-        </div>
+          <input
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Admin token"
+            autoComplete="current-password"
+            className="mb-3 w-full rounded-lg border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm outline-none focus:border-amber-500"
+            required
+          />
+          {message && <p className="mb-3 text-xs text-red-400">{message}</p>}
+          <button disabled={loading} className="w-full rounded-lg bg-amber-500 py-2.5 font-bold text-slate-950 disabled:opacity-50">
+            {loading ? "Tekshirilmoqda…" : "Kirish"}
+          </button>
+        </form>
       </div>
     );
   }
 
   return (
     <div className="py-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+      <div className="mb-6 flex items-center justify-between border-b border-slate-800 pb-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100">🛠 Admin Panel</h1>
-          <p className="text-xs text-slate-400">Biznes Darslari boshqaruv paneli</p>
+          <h1 className="text-2xl font-bold">🛠 Admin panel</h1>
+          <p className="text-xs text-slate-400">Backenddagi haqiqiy darslar boshqaruvi</p>
         </div>
-        <button
-          onClick={handleLogout}
-          className="rounded-lg border border-slate-700 px-3.5 py-1.5 text-xs font-semibold text-slate-300 hover:border-red-500 hover:text-red-400 transition-colors"
-        >
+        <button onClick={() => logout()} className="rounded-lg border border-slate-700 px-3.5 py-1.5 text-xs hover:border-red-500">
           Chiqish
         </button>
       </div>
@@ -163,7 +190,7 @@ ${tagsText ? `🏷 ${tagsText}\n` : ""}
       {stats && (
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
           {[
-            ["Jami darslar", stats.jami],
+            ["Jami", stats.jami],
             ["Chop etilgan", stats.chop_etilgan],
             ["Kutilmoqda", stats.kutilmoqda],
             ["Rad etilgan", stats.rad_etilgan],
@@ -171,112 +198,65 @@ ${tagsText ? `🏷 ${tagsText}\n` : ""}
           ].map(([label, value]) => (
             <div key={label} className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 text-center">
               <div className="text-2xl font-bold text-amber-400">{value}</div>
-              <div className="text-xs text-slate-400 mt-0.5">{label}</div>
+              <div className="text-xs text-slate-400">{label}</div>
             </div>
           ))}
         </div>
       )}
 
-      <div className="mb-6 flex gap-2">
-        {STATUSES.map((s) => (
+      <div className="mb-5 flex flex-wrap gap-2">
+        {STATUSES.map((item) => (
           <button
-            key={s.value}
-            onClick={() => setStatus(s.value)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-              status === s.value
-                ? "bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/20"
-                : "border border-slate-800 bg-slate-900/60 text-slate-300 hover:border-amber-500/50"
-            }`}
+            key={item.value}
+            onClick={() => setStatus(item.value)}
+            className={`rounded-full px-4 py-1.5 text-sm ${status === item.value ? "bg-amber-500 font-bold text-slate-950" : "border border-slate-800 text-slate-300"}`}
           >
-            {s.label}
+            {item.label}
           </button>
         ))}
+        <button onClick={loadData} className="rounded-full border border-slate-700 px-4 py-1.5 text-sm text-slate-300">
+          ↻ Yangilash
+        </button>
       </div>
 
-      {message && <div className="mb-4 text-sm text-amber-300">{message}</div>}
+      {message && <p className="mb-4 text-sm text-amber-300">{message}</p>}
+      {loading && <p className="mb-4 text-sm text-slate-400">Yuklanmoqda…</p>}
 
       <div className="space-y-4">
-        {articles.length === 0 && (
-          <p className="py-12 text-center text-slate-500">Bu bo&apos;limda darslar yo&apos;q.</p>
-        )}
+        {!loading && articles.length === 0 && <p className="py-10 text-center text-slate-500">Bu bo‘lim bo‘sh.</p>}
         {articles.map((article) => (
-          <div key={article.id} className="rounded-xl border border-slate-800 bg-slate-900/40 p-5 hover:border-slate-700 transition-colors">
-            <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-slate-400">
-              <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 font-semibold text-amber-400 border border-amber-500/20">
-                {article.category?.name || "—"}
-              </span>
-              <span>{article.source_name || "Biznes Darslari"}</span>
-            </div>
-            <h2 className="mb-1.5 font-bold text-slate-100 text-lg">{article.title}</h2>
-            <p className="mb-4 text-sm text-slate-300 leading-relaxed">{article.summary}</p>
+          <article key={article.id} className="rounded-xl border border-slate-800 bg-slate-900/40 p-5">
+            <div className="mb-2 text-xs text-amber-400">{article.category?.name || "Bo‘limsiz"} · Muhimlik: {article.importance}/5</div>
+            <h2 className="mb-2 text-lg font-bold">{article.title}</h2>
+            <p className="mb-4 text-sm text-slate-300">{article.summary}</p>
             <div className="flex flex-wrap gap-2 text-xs">
-              <button
-                onClick={() => setPreviewArticle(article)}
-                className="rounded-lg bg-sky-500/10 border border-sky-500/30 px-3.5 py-2 font-semibold text-sky-400 hover:bg-sky-500/20 transition-colors"
-              >
-                📤 Telegram Post Preview
-              </button>
-              <a
-                href={`/${article.category?.slug || "biznesni-boshlash"}/${article.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-lg border border-slate-700 bg-slate-950 px-3.5 py-2 text-slate-300 hover:border-amber-500 hover:text-white transition-colors"
-              >
-                🔗 Saytda ko&apos;rish
-              </a>
+              <button onClick={() => setEditing({ ...article })} className="rounded-lg border border-sky-500/40 px-3 py-2 text-sky-400">Tahrirlash</button>
+              {article.status !== "published" && <button onClick={() => runAction(article, "approve", "Dars chop etildi")} className="rounded-lg border border-emerald-500/40 px-3 py-2 text-emerald-400">Chop etish</button>}
+              {article.status !== "rejected" && <button onClick={() => runAction(article, "reject", "Dars rad etildi")} className="rounded-lg border border-orange-500/40 px-3 py-2 text-orange-400">Rad etish</button>}
+              {article.status === "published" && !article.sent_to_telegram && <button onClick={() => runAction(article, "telegram", "Telegram kanaliga yuborildi")} className="rounded-lg border border-sky-500/40 px-3 py-2 text-sky-400">Telegramga yuborish</button>}
+              <a href={`/${article.category?.slug || "biznesni-boshlash"}/${article.slug}`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-slate-700 px-3 py-2">Saytda ko‘rish</a>
+              <button onClick={() => runAction(article, "delete", "Dars o‘chirildi")} className="rounded-lg border border-red-500/40 px-3 py-2 text-red-400">O‘chirish</button>
             </div>
-          </div>
+          </article>
         ))}
       </div>
 
-      {/* Telegram Post Preview Modal */}
-      {previewArticle && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl border border-sky-500/30 bg-slate-900 p-6 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-lg font-bold text-sky-400">📱 Telegram Post Preview</h3>
-              <button
-                onClick={() => setPreviewArticle(null)}
-                className="rounded-full bg-slate-800 p-1.5 text-slate-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="mb-4 rounded-xl border border-slate-800 bg-slate-950 p-4 font-sans text-sm text-slate-200">
-              <div className="mb-2 font-bold text-slate-100">🎓 {previewArticle.title}</div>
-              <div className="mb-3 leading-relaxed text-slate-300">{previewArticle.summary}</div>
-              {previewArticle.practical_note && (
-                <div className="mb-3 text-xs italic text-amber-300 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
-                  💡 {previewArticle.practical_note}
-                </div>
-              )}
-              <div className="text-xs text-sky-400">
-                📂 {previewArticle.category?.name || "Biznes darsi"}
-              </div>
-              {previewArticle.tags && previewArticle.tags.length > 0 && (
-                <div className="mt-2 text-xs text-slate-400">
-                  {previewArticle.tags.map((t) => `#${t.replace(/\s+/g, "_")}`).join(" ")}
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setPreviewArticle(null)}
-                className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800"
-              >
-                Bekor qilish
-              </button>
-              <button
-                onClick={handleSendTelegram}
-                disabled={sendingTelegram}
-                className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-bold text-slate-950 hover:bg-sky-400 disabled:opacity-50 transition-colors"
-              >
-                {sendingTelegram ? "Tayyorlanmoqda..." : "🚀 Telegram'da Ulashish"}
-              </button>
-            </div>
-          </div>
+      {editing && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-4">
+          <form onSubmit={saveArticle} className="mx-auto my-8 max-w-3xl space-y-4 rounded-2xl border border-slate-700 bg-slate-900 p-6">
+            <div className="flex items-center justify-between"><h2 className="text-xl font-bold">Darsni tahrirlash</h2><button type="button" onClick={() => setEditing(null)}>✕</button></div>
+            {[
+              ["title", "Sarlavha", 1],
+              ["seo_title", "SEO sarlavha", 1],
+              ["summary", "Qisqa xulosa", 3],
+              ["content", "Dars matni", 12],
+              ["practical_note", "Amaliy ahamiyat", 4],
+            ].map(([field, label, rows]) => (
+              <label key={field} className="block text-sm"><span className="mb-1 block text-slate-300">{label}</span><textarea rows={rows} value={editing[field] || ""} onChange={(event) => setEditing({ ...editing, [field]: event.target.value })} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2" required={field === "title"} /></label>
+            ))}
+            <label className="block text-sm"><span className="mb-1 block text-slate-300">Muhimlik (1–5)</span><input type="number" min="1" max="5" value={editing.importance} onChange={(event) => setEditing({ ...editing, importance: event.target.value })} className="w-24 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2" /></label>
+            <div className="flex justify-end gap-3"><button type="button" onClick={() => setEditing(null)} className="rounded-lg border border-slate-700 px-4 py-2">Bekor qilish</button><button disabled={loading} className="rounded-lg bg-amber-500 px-4 py-2 font-bold text-slate-950">Saqlash</button></div>
+          </form>
         </div>
       )}
     </div>

@@ -2,70 +2,70 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import fallbackData from "../lib/fallback-data.json";
 
 const BUDGETS = [
-  { id: "5 mln gacha", label: "💵 5 mln so'mgacha", filter: "5 mln gacha" },
-  { id: "medium", label: "💰 5–20 mln so'm", filter: "" },
-  { id: "large", label: "🏦 20 mln+ so'm", filter: "" },
+  { id: "low", label: "💵 5 mln so'mgacha" },
+  { id: "medium", label: "💰 5–20 mln so'm" },
+  { id: "large", label: "🏦 20 mln+ so'm" },
 ];
 
 const LOCATIONS = [
-  { id: "uydan", label: "🏠 Uyda o'tirib", filter: "uydan" },
-  { id: "onlayn", label: "🌐 Onlayn / Kompyuterda", filter: "onlayn" },
-  { id: "qishloq", label: "🌾 Qishloq / Tumanda", filter: "qishloq" },
-  { id: "any", label: "🏢 Istalgan joyda", filter: "" },
+  { id: "uydan", label: "🏠 Uyda o'tirib" },
+  { id: "onlayn", label: "🌐 Onlayn / Kompyuterda" },
+  { id: "qishloq", label: "🌾 Qishloq / Tumanda" },
+  { id: "any", label: "🏢 Istalgan joyda" },
 ];
 
 const SECTORS = [
-  { id: "xizmat", label: "🛠 Xizmat ko'rsatish", filter: "xizmat" },
-  { id: "savdo", label: "🛒 Savdo / Do'kon", filter: "savdo" },
-  { id: "ishlab chiqarish", label: "🏭 Kichik ishlab chiqarish", filter: "ishlab chiqarish" },
+  { id: "xizmat", label: "🛠 Xizmat ko'rsatish" },
+  { id: "savdo", label: "🛒 Savdo / Do'kon" },
+  { id: "ishlab chiqarish", label: "🏭 Kichik ishlab chiqarish" },
 ];
 
 export default function SmartMatcher() {
   const [step, setStep] = useState(1);
-  const [budget, setBudget] = useState("5 mln gacha");
+  const [budget, setBudget] = useState("low");
   const [location, setLocation] = useState("uydan");
   const [sector, setSector] = useState("xizmat");
   const [results, setResults] = useState([]);
   const [matched, setMatched] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  function handleMatch() {
-    const all = fallbackData.articles || [];
-    const filtered = all.filter((a) => {
-      const tags = (a.tags || []).map((t) => t.toLowerCase());
-      const catSlug = a.category?.slug || "";
-      const text = `${a.title} ${a.summary} ${a.content}`.toLowerCase();
-
-      let matchCount = 0;
-      if (budget && (tags.includes(budget) || text.includes(budget))) matchCount++;
-      if (location && location !== "any" && (tags.includes(location) || text.includes(location))) matchCount++;
-      if (sector && (tags.includes(sector) || catSlug.includes(sector) || text.includes(sector))) matchCount++;
-
-      return matchCount >= 1;
-    });
-
-    setResults(filtered.slice(0, 3));
-    setMatched(true);
+  async function handleMatch() {
+    setLoading(true);
+    setError("");
+    try {
+      const params = new URLSearchParams({ budget, location, sector });
+      const response = await fetch(`/api/news/ideas/match?${params}`, { cache: "no-store" });
+      if (!response.ok) throw new Error("Mos g‘oyalarni olishda xatolik yuz berdi");
+      setResults(await response.json());
+      setMatched(true);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleReset() {
     setStep(1);
     setMatched(false);
+    setResults([]);
+    setError("");
   }
 
   return (
     <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 p-6 shadow-2xl backdrop-blur-md">
       <div className="mb-6 border-b border-slate-800 pb-4 text-center sm:text-left">
         <span className="inline-block rounded-full bg-amber-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-400 border border-amber-500/20 mb-2">
-          🤖 Smart Matcher · AI Saralash
+          🎯 Biznes g‘oya moslik testi
         </span>
         <h2 className="text-xl sm:text-2xl font-bold text-slate-100">
           Sizga Mos Biznes G&apos;oyasini Toping
         </h2>
         <p className="text-xs sm:text-sm text-slate-400 mt-1">
-          Budjetingiz va imkoniyatingizga mos 3 ta eng ma&apos;qul amaliy g&apos;oyani 10 sekundda aniqlang
+          Tanlangan mezonlar asosida katalogdagi eng mos 3 ta amaliy g&apos;oyani toping
         </p>
       </div>
 
@@ -93,11 +93,11 @@ export default function SmartMatcher() {
                   <button
                     key={b.id}
                     onClick={() => {
-                      setBudget(b.filter);
+                      setBudget(b.id);
                       setStep(2);
                     }}
                     className={`rounded-xl border p-4 text-left transition-all ${
-                      budget === b.filter
+                      budget === b.id
                         ? "border-amber-500 bg-amber-500/10 text-amber-400 font-bold"
                         : "border-slate-800 bg-slate-950/60 text-slate-300 hover:border-slate-700"
                     }`}
@@ -119,11 +119,11 @@ export default function SmartMatcher() {
                   <button
                     key={l.id}
                     onClick={() => {
-                      setLocation(l.filter);
+                      setLocation(l.id);
                       setStep(3);
                     }}
                     className={`rounded-xl border p-4 text-left transition-all ${
-                      location === l.filter
+                      location === l.id
                         ? "border-amber-500 bg-amber-500/10 text-amber-400 font-bold"
                         : "border-slate-800 bg-slate-950/60 text-slate-300 hover:border-slate-700"
                     }`}
@@ -150,9 +150,9 @@ export default function SmartMatcher() {
                 {SECTORS.map((sec) => (
                   <button
                     key={sec.id}
-                    onClick={() => setSector(sec.filter)}
+                    onClick={() => setSector(sec.id)}
                     className={`rounded-xl border p-4 text-left transition-all ${
-                      sector === sec.filter
+                      sector === sec.id
                         ? "border-amber-500 bg-amber-500/10 text-amber-400 font-bold"
                         : "border-slate-800 bg-slate-950/60 text-slate-300 hover:border-slate-700"
                     }`}
@@ -170,11 +170,13 @@ export default function SmartMatcher() {
                 </button>
                 <button
                   onClick={handleMatch}
+                  disabled={loading}
                   className="rounded-xl bg-amber-500 px-6 py-2.5 font-bold text-slate-950 hover:bg-amber-400 shadow-lg shadow-amber-500/20 transition-all"
                 >
-                  ✨ Mos G&apos;oyalarni Saralash
+                  {loading ? "Saralanmoqda…" : "Mos g‘oyalarni saralash"}
                 </button>
               </div>
+              {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
             </div>
           )}
         </div>
@@ -203,7 +205,7 @@ export default function SmartMatcher() {
                     <span className="rounded-full bg-amber-500/10 px-2 py-0.5 font-semibold text-amber-400">
                       {art.category?.name || "Biznes G'oyasi"}
                     </span>
-                    <span className="text-emerald-400 font-semibold">⚡ Yuqori Marja</span>
+                    <span className="text-slate-400">Mezonlar bo‘yicha mos</span>
                   </div>
                   <h4 className="font-bold text-slate-100 text-sm mb-1">{art.title}</h4>
                   <p className="text-xs text-slate-300 line-clamp-2 mb-3">{art.summary}</p>
@@ -211,7 +213,7 @@ export default function SmartMatcher() {
                     href={`/${art.category?.slug || "biznes-goyalari"}/${art.slug}`}
                     className="inline-block rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 text-xs font-bold text-amber-400 hover:bg-amber-500 hover:text-slate-950 transition-colors"
                   >
-                    📖 7 Kunlik Test Rejasini O&apos;qish →
+                    G‘oyani batafsil ko‘rish →
                   </Link>
                 </div>
               ))

@@ -1,5 +1,11 @@
 import hashlib
 import re
+from datetime import datetime, timezone
+
+
+def utcnow_naive() -> datetime:
+    """Mavjud timezone-naive DB ustunlari uchun deprecation'siz UTC vaqt."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def slugify(text: str) -> str:

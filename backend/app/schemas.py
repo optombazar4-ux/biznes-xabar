@@ -1,5 +1,9 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+
+class AdminLoginIn(BaseModel):
+    token: str = Field(min_length=1, max_length=512)
 
 
 class CategoryOut(BaseModel):
@@ -35,16 +39,16 @@ class ArticleOut(BaseModel):
 
 
 class ArticleUpdate(BaseModel):
-    title: str | None = None
-    seo_title: str | None = None
+    title: str | None = Field(default=None, min_length=1, max_length=300)
+    seo_title: str | None = Field(default=None, max_length=300)
     summary: str | None = None
     content: str | None = None
     practical_note: str | None = None
-    tags: list | None = None
-    quiz: list | None = None
-    importance: int | None = None
-    category_id: int | None = None
-    image_url: str | None = None
+    tags: list[str] | None = None
+    quiz: list[dict] | None = None
+    importance: int | None = Field(default=None, ge=1, le=5)
+    category_id: int | None = Field(default=None, ge=1)
+    image_url: str | None = Field(default=None, max_length=1000)
 
 
 class SubscribeIn(BaseModel):

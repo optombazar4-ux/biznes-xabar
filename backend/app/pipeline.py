@@ -6,8 +6,8 @@ AI orqali dars yaratadi va saqlaydi. Kuratsiya qilingan biznes g'oyalari
 tugagach, haftalik RSS trendlaridan validatsiyalangan yangi g'oyalar taklif
 qilinadi va maqolaga aylantiriladi.
 
-AUTO_PUBLISH=true (standart) bo'lsa darslar darhol saytga chiqadi va Telegram
-kanalga yuboriladi (AUTO_TELEGRAM=true bo'lsa).
+AUTO_PUBLISH=true bo'lsa minimal muhimlik chegarasidan o'tgan darslar saytga
+chiqadi; AUTO_TELEGRAM alohida muhimlik chegarasi bilan kanalga yuboradi.
 
 Ishga tushirish:  python -m app.pipeline
 Muntazam ishlashi uchun cron'ga qo'ying, masalan har soatda:
@@ -17,7 +17,6 @@ Muntazam ishlashi uchun cron'ga qo'ying, masalan har soatda:
 import os
 import sys
 import random
-from datetime import datetime
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
@@ -29,11 +28,13 @@ from sqlalchemy import text
 
 from .config import (
     AUTO_PUBLISH,
+    AUTO_PUBLISH_MIN_IMPORTANCE,
     AUTO_TELEGRAM,
+    AUTO_TELEGRAM_MIN_IMPORTANCE,
     RSS_IDEA_ENABLED,
     TELEGRAM_BOT_TOKEN,
 )
-from .database import Base, SessionLocal, engine
+from .database import SessionLocal, engine
 from .models import Article, Category, IdeaProposal
 from .seed import prune_legacy_content, seed_categories
 from .services.education import (
@@ -44,11 +45,24 @@ from .services.education import (
 )
 from .services.rss_ideas import create_weekly_proposals
 from .services.telegram import send_to_channel
-from .utils import slugify
+from .utils import slugify, utcnow_naive
 
 # Har ishga tushganda ko'pi bilan shuncha yangi dars yaratiladi (xarajat/sur'at nazorati)
 LESSON_BATCH_PER_RUN = int(os.getenv("LESSON_BATCH_PER_RUN", "3"))
 PIPELINE_LOCK_ID = 862_024_071
+
+
+def _should_auto_publish(importance: int) -> bool:
+    return AUTO_PUBLISH and importance >= AUTO_PUBLISH_MIN_IMPORTANCE
+
+
+def _should_auto_telegram(article: Article) -> bool:
+    return (
+        article.status == "published"
+        and AUTO_TELEGRAM
+        and bool(TELEGRAM_BOT_TOKEN)
+        and article.importance >= AUTO_TELEGRAM_MIN_IMPORTANCE
+    )
 
 
 def _try_pipeline_lock():
@@ -91,6 +105,8 @@ def _create_lesson(db, categories, section_slug: str, topic: str) -> Article | N
         slug = f"{slug}-dars"
 
     category = categories.get(section_slug)
+    importance = 3
+    auto_publish = _should_auto_publish(importance)
     article = Article(
         title=lesson["sarlavha"],
         seo_title=lesson["seo_sarlavha"],
@@ -100,19 +116,19 @@ def _create_lesson(db, categories, section_slug: str, topic: str) -> Article | N
         practical_note=lesson["amaliy_ahamiyat"],
         tags=lesson["teglar"],
         quiz=lesson.get("quiz", []),
-        importance=3,
+        importance=importance,
 
         original_title=topic,  # mavzu — takrorlanmaslik uchun kalit
         original_url=f"internal://dars/{slug}",
         source_name="Biznes Darslari",
         image_url=None,
         category_id=category.id if category else None,
-        status="published" if AUTO_PUBLISH else "pending",
-        published_at=datetime.utcnow() if AUTO_PUBLISH else None,
+        status="published" if auto_publish else "pending",
+        published_at=utcnow_naive() if auto_publish else None,
     )
     db.add(article)
     db.commit()
-    print("   ✓ Dars saqlandi" + (" (saytga chiqarildi)" if AUTO_PUBLISH else " (pending)"))
+    print("   ✓ Dars saqlandi" + (" (saytga chiqarildi)" if auto_publish else " (pending)"))
     return article
 
 
@@ -168,6 +184,8 @@ def _create_dynamic_idea(
         slug = f"{slug}-goya-{proposal.id}"
 
     category = categories.get("biznes-goyalari")
+    importance = 4
+    auto_publish = _should_auto_publish(importance)
     article = Article(
         title=lesson["sarlavha"],
         seo_title=lesson["seo_sarlavha"],
@@ -177,7 +195,7 @@ def _create_dynamic_idea(
         practical_note=lesson["amaliy_ahamiyat"],
         tags=lesson["teglar"],
         quiz=lesson.get("quiz", []),
-        importance=4,
+        importance=importance,
 
         original_title=proposal.title,
         original_url=f"internal://dars/ai-goya-{proposal.id}-{slug}",
@@ -187,14 +205,14 @@ def _create_dynamic_idea(
         )[:200],
         image_url=None,
         category_id=category.id if category else None,
-        status="published" if AUTO_PUBLISH else "pending",
-        published_at=datetime.utcnow() if AUTO_PUBLISH else None,
+        status="published" if auto_publish else "pending",
+        published_at=utcnow_naive() if auto_publish else None,
     )
     db.add(article)
     db.flush()
     proposal.article_id = article.id
-    proposal.status = "published" if AUTO_PUBLISH else "generated"
-    proposal.published_at = datetime.utcnow() if AUTO_PUBLISH else None
+    proposal.status = "published" if auto_publish else "generated"
+    proposal.published_at = utcnow_naive() if auto_publish else None
     db.commit()
     print("   ✓ Validatsiyalangan AI g'oya saqlandi")
     return article
@@ -204,6 +222,9 @@ from .services.indexer import ping_search_engines
 
 
 def _send_to_telegram_if_enabled(db, article: Article) -> None:
+    if article.status != "published":
+        return
+
     # IndexNow (Yandex/Bing) va Instant Indexing signali yuborish
     try:
         cat_slug = article.category.slug if article.category else "biznesni-boshlash"
@@ -213,7 +234,7 @@ def _send_to_telegram_if_enabled(db, article: Article) -> None:
     except Exception as err:
         print(f"   ✗ IndexNow xatosi: {err}")
 
-    if not (AUTO_PUBLISH and AUTO_TELEGRAM and TELEGRAM_BOT_TOKEN):
+    if not _should_auto_telegram(article):
         return
     try:
         send_to_channel(article)
@@ -230,7 +251,6 @@ def run_pipeline(per_feed: int = 0) -> int:
 
     (per_feed argumenti eski chaqiruvlar bilan moslik uchun qoldirilgan, ishlatilmaydi.)
     """
-    Base.metadata.create_all(engine)
     lock_connection, lock_acquired = _try_pipeline_lock()
     if not lock_acquired:
         lock_connection.close()

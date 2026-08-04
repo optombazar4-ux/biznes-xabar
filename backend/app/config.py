@@ -1,6 +1,8 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 load_dotenv()
 
 # Ma'lumotlar bazasi: prod'da PostgreSQL, lokal ishlab chiqishda SQLite yetarli.
@@ -21,16 +23,16 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-opus-4-8")
 
 # Admin panelga kirish uchun maxfiy token (X-Admin-Token sarlavhasi yoki JWT orqali).
-ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "biznesdarslari2026adminsecret202608")
+ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "").strip()
 UNSAFE_ADMIN_TOKENS = {
+    "biznesdarslari2026adminsecret202608",
     "admin-token-o'zgartiring",
     "maxfiy-admin-token",
     "bu-yerga-kuchli-tasodifiy-token-kiriting",
 }
 
 # JWT sozlamalari
-_jwt_fallback = (ADMIN_TOKEN + "-secure-jwt-key-2026-uzbekistan") if len(ADMIN_TOKEN) < 32 else ADMIN_TOKEN
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", _jwt_fallback)
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "").strip() or ADMIN_TOKEN
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "1440"))  # 24 soat
 
@@ -38,7 +40,11 @@ JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "1440"))  # 24 soat
 
 
 def admin_is_configured() -> bool:
-    return len(ADMIN_TOKEN) >= 16 and ADMIN_TOKEN not in UNSAFE_ADMIN_TOKENS
+    return (
+        len(ADMIN_TOKEN) >= 24
+        and ADMIN_TOKEN not in UNSAFE_ADMIN_TOKENS
+        and len(JWT_SECRET_KEY) >= 24
+    )
 
 
 
@@ -95,8 +101,4 @@ BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL", "http://localhost:8000")
 
 # Frontend manzili (CORS uchun)
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
-
-# Redis kesh sozlamalari
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-ENABLE_REDIS_CACHE = _bool("ENABLE_REDIS_CACHE", "true")
-
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", FRONTEND_ORIGIN)

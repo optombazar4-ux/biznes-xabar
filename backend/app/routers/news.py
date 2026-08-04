@@ -1,17 +1,18 @@
 """Ommaviy darslar API — faqat chop etilgan darslar."""
 
 from collections import Counter
+import re
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Article, Category
 from ..schemas import ArticleOut, SubscribeIn
-from ..cache import cache_response
 from ..services.education import LESSON_TOPICS
 from ..services.audio import generate_article_audio
+from ..rate_limit import enforce_rate_limit
 
 
 
@@ -165,6 +166,53 @@ def get_rss_feed(db: Session = Depends(get_db)):
     return Response(content=rss_xml, media_type="application/xml")
 
 
+def _matcher_score(article: Article, budget: str, location: str, sector: str) -> int:
+    tags = {str(tag).lower() for tag in (article.tags or [])}
+    text_value = " ".join(
+        [article.title or "", article.summary or "", article.content or ""]
+    ).lower()
+    score = 0
+
+    amounts = [
+        float(value.replace(",", "."))
+        for value in re.findall(r"(\d+(?:[.,]\d+)?)\s*mln", text_value)
+    ]
+    if budget == "low" and ("5 mln gacha" in tags or any(value <= 5 for value in amounts)):
+        score += 1
+    elif budget == "medium" and any(5 < value <= 20 for value in amounts):
+        score += 1
+    elif budget == "large" and any(value > 20 for value in amounts):
+        score += 1
+
+    if location == "any" or location in tags or location in text_value:
+        score += 1
+    if sector in tags or sector in text_value:
+        score += 1
+    return score
+
+
+@router.get("/ideas/match", response_model=list[ArticleOut])
+def match_business_ideas(
+    budget: str = Query(pattern="^(low|medium|large)$"),
+    location: str = Query(pattern="^(uydan|onlayn|qishloq|any)$"),
+    sector: str = Query(pattern="^(xizmat|savdo|ishlab chiqarish)$"),
+    db: Session = Depends(get_db),
+):
+    """Statik da'volarsiz, tanlangan mezonlar bo'yicha g'oyalarni saralaydi."""
+    candidates = (
+        published(db)
+        .join(Category)
+        .filter(Category.slug == "biznes-goyalari")
+        .all()
+    )
+    ranked = sorted(
+        ((article, _matcher_score(article, budget, location, sector)) for article in candidates),
+        key=lambda item: (item[1], item[0].published_at or item[0].created_at),
+        reverse=True,
+    )
+    return [article for article, score in ranked if score >= 2][:3]
+
+
 @router.get("/{slug}", response_model=ArticleOut)
 def lesson_detail(slug: str, db: Session = Depends(get_db)):
     article = published(db).filter(Article.slug == slug).first()
@@ -206,8 +254,9 @@ def related_lessons(slug: str, db: Session = Depends(get_db), limit: int = 4):
 
 
 @router.get("/{slug}/audio")
-def lesson_audio(slug: str, db: Session = Depends(get_db)):
+def lesson_audio(slug: str, request: Request, db: Session = Depends(get_db)):
     """Dars matnidan O'zbekcha MP3 audio yaratadi va kesh URL qaytaradi."""
+    enforce_rate_limit(request, "lesson-audio", limit=10, window_seconds=60 * 60)
     article = published(db).filter(Article.slug == slug).first()
     if not article:
         raise HTTPException(status_code=404, detail="Dars topilmadi")
@@ -227,8 +276,9 @@ def lesson_audio(slug: str, db: Session = Depends(get_db)):
 
 
 @router.post("/subscribe")
-def subscribe_newsletter(data: SubscribeIn, db: Session = Depends(get_db)):
+def subscribe_newsletter(data: SubscribeIn, request: Request, db: Session = Depends(get_db)):
     """Email obunasini ro'yxatdan o'tkazish."""
+    enforce_rate_limit(request, "newsletter-subscribe", limit=5, window_seconds=60 * 60)
     from ..models import Subscription
     existing = db.query(Subscription).filter(Subscription.email == data.email).first()
     if existing:
@@ -241,4 +291,3 @@ def subscribe_newsletter(data: SubscribeIn, db: Session = Depends(get_db)):
     db.add(sub)
     db.commit()
     return {"ok": True, "xabar": "Rahmat! Email obunangiz muvaffaqiyatli qabul qilindi."}
-

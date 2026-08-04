@@ -9,6 +9,7 @@ Ishga tushirish:  python bot.py
 import asyncio
 import html
 import os
+from pathlib import Path
 
 import httpx
 from aiogram import Bot, Dispatcher, F
@@ -25,6 +26,7 @@ from dotenv import load_dotenv
 
 from . import storage
 
+load_dotenv(Path(__file__).resolve().parents[3] / ".env")
 load_dotenv()
 
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")

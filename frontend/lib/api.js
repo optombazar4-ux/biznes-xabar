@@ -56,11 +56,8 @@ export async function apiGet(path, params = {}) {
     const res = await fetch(url, { cache: "no-store", signal: controller.signal });
     clearTimeout(timeoutId);
 
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) return data;
-      if (data && typeof data === "object" && Object.keys(data).length > 0) return data;
-    }
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    return await res.json();
   } catch (err) {
     // API server yo'q bo'lsa yoki offline bo'lsa fallback ishlashiga o'tamiz
   }
@@ -87,17 +84,16 @@ export async function apiGet(path, params = {}) {
 
 export async function apiPost(path, body = {}) {
   const url = `${API_URL}${path}`;
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || `API ${res.status}`);
   }
+  return await res.json();
 }
 
 export { API_URL };

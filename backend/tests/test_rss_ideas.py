@@ -1,6 +1,6 @@
 import unittest
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import timedelta
 from unittest.mock import patch
 
 from sqlalchemy import create_engine
@@ -17,6 +17,7 @@ from app.services.rss_ideas import (
     proposal_batch_is_due,
 )
 from app.utils import title_tokens
+from app.utils import utcnow_naive
 
 
 class CuratedCatalogTests(unittest.TestCase):
@@ -128,7 +129,7 @@ class ProposalScheduleTests(unittest.TestCase):
             db.add(run)
             db.commit()
             self.assertFalse(proposal_batch_is_due(db))
-            run.created_at = datetime.utcnow() - timedelta(days=8)
+            run.created_at = utcnow_naive() - timedelta(days=8)
             db.commit()
             self.assertTrue(proposal_batch_is_due(db))
 

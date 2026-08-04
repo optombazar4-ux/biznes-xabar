@@ -30,7 +30,7 @@ from ..config import (
     VERTEX_GEMINI_MODEL,
 )
 from ..models import Article, IdeaProposal, IdeaProposalRun
-from ..utils import is_near_duplicate, title_tokens
+from ..utils import is_near_duplicate, title_tokens, utcnow_naive
 from .education import IDEA_FILTERS, IDEA_TOPICS
 
 TREND_FEEDS = [
@@ -238,7 +238,7 @@ def _trend_score(entry: dict) -> int:
     score += sum(weight for phrase, weight in NEGATIVE_SIGNALS.items() if phrase in haystack)
     published_at = entry.get("published_at")
     if published_at:
-        age_days = max(0, (datetime.utcnow() - published_at).days)
+        age_days = max(0, (utcnow_naive() - published_at).days)
         score += 5 if age_days <= 2 else 3 if age_days <= 7 else 1
     return score
 
@@ -253,7 +253,7 @@ def collect_trend_signals(db: Session, max_signals: int = 24) -> list[dict]:
     for (urls,) in db.query(IdeaProposal.source_urls).all():
         used_urls.update(_canonical_url(url) for url in (urls or []))
 
-    cutoff = datetime.utcnow() - timedelta(days=30)
+    cutoff = utcnow_naive() - timedelta(days=30)
     candidates = []
     with httpx.Client(
         timeout=25,
@@ -500,7 +500,7 @@ def proposal_batch_is_due(db: Session) -> bool:
     retry_after = timedelta(hours=1) if last.status == "error" else timedelta(
         days=RSS_IDEA_INTERVAL_DAYS
     )
-    return last.created_at <= datetime.utcnow() - retry_after
+    return last.created_at <= utcnow_naive() - retry_after
 
 
 def create_weekly_proposals(db: Session) -> int:

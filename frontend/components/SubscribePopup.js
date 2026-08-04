@@ -46,10 +46,10 @@ export default function SubscribePopup() {
     setMsg("");
     try {
       const res = await apiPost("/api/news/subscribe", { email });
-      setMsg(res?.xabar || "Obuna qilindi!");
+      setMsg(res.xabar || "Obuna qilindi!");
       setTimeout(close, 2500);
-    } catch {
-      setMsg("Xatolik yuz berdi. Qayta urinib ko'ring.");
+    } catch (error) {
+      setMsg(error.message || "Xatolik yuz berdi. Qayta urinib ko'ring.");
     } finally {
       setLoading(false);
     }

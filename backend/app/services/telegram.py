@@ -65,7 +65,10 @@ def send_to_channel(article: Article) -> None:
             "parse_mode": "HTML",
             "reply_markup": reply_markup,
         }
-        response = httpx.post(f"{api}/sendPhoto", json=payload, timeout=30)
+        try:
+            response = httpx.post(f"{api}/sendPhoto", json=payload, timeout=30)
+        except httpx.RequestError:
+            raise RuntimeError("Telegram tarmoq xatosi") from None
     else:
         text = format_post(article)
         payload = {
@@ -75,7 +78,10 @@ def send_to_channel(article: Article) -> None:
             "disable_web_page_preview": False,
             "reply_markup": reply_markup,
         }
-        response = httpx.post(f"{api}/sendMessage", json=payload, timeout=30)
+        try:
+            response = httpx.post(f"{api}/sendMessage", json=payload, timeout=30)
+        except httpx.RequestError:
+            raise RuntimeError("Telegram tarmoq xatosi") from None
 
     data = response.json()
     if not data.get("ok"):

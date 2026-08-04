@@ -1,167 +1,177 @@
-# 🤖 Biznes Xabar
+# Biznes Darslari
 
-Sun'iy intellektga oid eng muhim yangiliklarni dunyodagi ishonchli manbalardan **avtomatik yig'ib**, AI yordamida **o'zbek tiliga moslashtirib**, **web sayt** va **Telegram bot** orqali yetkazib beruvchi platforma (MVP).
+O‘zbekistonda biznes boshlash va yuritish bo‘yicha bepul amaliy darslar, biznes g‘oyalari va yordamchi vositalar platformasi.
+
+## Imkoniyatlar
+
+- Kurikulum asosida AI yordamida dars va biznes g‘oyalar yaratish
+- Admin moderatsiyasi va muhimlik darajasiga asoslangan avtomatik chop etish
+- Kategoriya, qidiruv, o‘xshash darslar va biznes g‘oya moslik testi
+- Telegram kanal va bot integratsiyasi
+- Email obuna va dayjest
+- O‘zbekcha audio, RSS, sitemap, PWA va SEO metadata
+- PostgreSQL yoki lokal SQLite
+
+AI yordamida tayyorlangan kontent foydalanuvchiga ochiq ko‘rsatiladi. Soliq, huquq va moliya bo‘yicha muhim qarorlar rasmiy manbalar bilan tekshirilishi kerak.
 
 ## Arxitektura
 
-```
-┌─────────────────┐     ┌──────────────────────┐     ┌───────────────┐
-│  RSS manbalar   │ --> │  AI Agent (pipeline) │ --> │  PostgreSQL / │
-│ OpenAI, Google, │     │  yig'ish → dublikat  │     │    SQLite     │
-│ TechCrunch, ... │     │  → Claude tahlili    │     │  (pending)    │
-└─────────────────┘     └──────────────────────┘     └───────┬───────┘
-                                                             │ admin tasdiqlaydi
-                        ┌──────────────┐    ┌────────────────┼────────────────┐
-                        │ Admin panel  │ -->│                ▼                │
-                        └──────────────┘    │  Web sayt (Next.js)             │
-                                            │  Telegram kanal + bot (aiogram) │
-                                            └─────────────────────────────────┘
+```text
+Next.js frontend ───────┐
+Telegram bot ───────────┼── FastAPI API ── PostgreSQL
+Admin panel ────────────┘        │
+                                 ├── AI pipeline (Gemini / Vertex / Claude)
+                                 ├── Telegram kanal
+                                 ├── SMTP dayjest
+                                 └── TTS audio/media
 ```
 
 | Qism | Texnologiya | Papka |
 |---|---|---|
-| Backend + REST API | FastAPI, SQLAlchemy, PostgreSQL/SQLite | `backend/` |
-| AI Agent | Gemini API (standart) yoki Claude API — strukturali JSON | `backend/app/services/ai_agent.py` |
-| Yangiliklar yig'uvchi | feedparser (RSS) + dublikat filtri | `backend/app/services/collector.py` |
-| Frontend | Next.js 15, React 19, Tailwind CSS 4 | `frontend/` |
-| Admin panel | Next.js sahifasi (`/admin`) + Admin API | `frontend/app/admin/` |
-| Telegram bot | aiogram 3 | `bot/` |
+| REST API va pipeline | FastAPI, SQLAlchemy, Alembic | `backend/` |
+| Sayt va admin panel | Next.js 15, React 19, Tailwind CSS 4 | `frontend/` |
+| Alohida Telegram bot | aiogram 3 | `bot/` |
 
-## AI Agent nima qiladi?
+## Docker bilan ishga tushirish
 
-Har bir inglizcha yangilik uchun AI model (standart: **Gemini `gemini-3.5-flash-lite`** — arzon va tez; `.env`da `AI_PROVIDER=claude` qilib Claude'ga o'tish mumkin) quyidagilarni **bitta so'rovda** tayyorlaydi (javob JSON sxema bilan kafolatlanadi):
-
-- `kategoriya` — Startaplar, Investitsiyalar, Moliya va bozorlar, Marketing, Boshqaruv, Elektron tijorat, Iqtisodiyot, Texnologiya biznesi, O'zbekiston tadbirkorligi
-- `sarlavha` — o'zbekcha sarlavha
-- `seo_sarlavha` — SEO uchun optimallashtirilgan sarlavha
-- `xulosa` — 3-5 jumlalik qisqa xulosa
-- `maqola` — to'liq o'zbekcha maqola (3-6 paragraf)
-- `amaliy_ahamiyat` — "Bu nima degani?" (dasturchilar/biznes uchun)
-- `teglar` — 3-6 ta teg
-- `ahamiyati` — 1-5 baho
-
-Maqolalar `pending` holatida saqlanadi — **admin tasdiqlagachgina** saytga chiqadi.
-
----
-
-## ⚡ Eng oson yo'l: Docker Compose (tavsiya etiladi)
-
-Butun platforma (PostgreSQL + backend + AI pipeline + sayt + bot) bitta buyruq bilan:
+1. Muhit faylini tayyorlang:
 
 ```bash
-cp .env.example .env      # GEMINI_API_KEY, ADMIN_TOKEN, TELEGRAM_* ni to'ldiring
+cp .env.example .env
+```
+
+Kamida `ADMIN_TOKEN` va kerakli AI/Telegram kalitlarini to‘ldiring. `ADMIN_TOKEN` kamida 24 belgili tasodifiy qiymat bo‘lishi shart.
+
+2. Stackni ishga tushiring:
+
+```bash
 docker compose up -d --build
 ```
 
-Shundan so'ng:
-- Sayt: http://localhost:3000 (admin: http://localhost:3000/admin)
-- API: http://localhost:8000/docs
-- Pipeline har soatda (`PIPELINE_INTERVAL`) avtomatik yangiliklarni yig'ib chop etadi
-- Bot `TELEGRAM_BOT_TOKEN` kiritilgan bo'lsa avtomatik ishlaydi
+Telegram bot boshqa serverda ishlayotgan bo‘lsa, lokal stack uni ishga tushirmaydi.
+Botni ataylab lokal yoqish uchun:
 
-Loglarni ko'rish: `docker compose logs -f pipeline` · To'xtatish: `docker compose down`
+```bash
+docker compose --profile bot up -d bot
+```
 
-Serverga qo'yganda `.env`da `NEXT_PUBLIC_API_URL`, `FRONTEND_ORIGIN`, `SITE_URL` qiymatlarini o'z domeningizga almashtiring.
+- Sayt: <http://localhost:3000>
+- Admin: <http://localhost:3000/admin>
+- API hujjatlari: <http://localhost:8000/docs>
+- Health check: <http://localhost:8000/health>
 
----
+Backend container ishga tushishidan oldin `python -m app.migrate` orqali Alembic migratsiyasini xavfsiz bajaradi. Pipeline backend sog‘lom bo‘lgandan keyin boshlanadi.
 
-Quyida har bir qismni Docker'siz, alohida ishga tushirish yo'riqnomasi.
+## Docker’siz lokal ishga tushirish
 
-## 1. Backend'ni ishga tushirish
+### Backend
 
 ```bash
 cd backend
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+# Linux/macOS: source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env        # GEMINI_API_KEY, ADMIN_TOKEN va boshqalarni to'ldiring
-
-# Serverni ishga tushirish (http://localhost:8000, hujjatlar: /docs)
+python -m app.migrate
 uvicorn app.main:app --reload
 ```
 
-**Yangiliklarni yig'ish va tahlil qilish** (qo'lda yoki cron orqali):
+Backend loyiha ildizidagi `.env` faylini ham o‘qiydi. `DATABASE_URL` berilmasa `backend/biznesxabar.db` SQLite bazasi ishlatiladi.
+
+Pipeline’ni bir marta qo‘lda ishga tushirish:
 
 ```bash
 python -m app.pipeline
 ```
 
-Muntazam avtomatik ishlashi uchun cron misoli (har soatda):
-
-```cron
-0 * * * * cd /path/backend && .venv/bin/python -m app.pipeline
-```
-
-## 2. Frontend'ni ishga tushirish
+### Frontend
 
 ```bash
 cd frontend
+cp .env.example .env.local
 npm install
-cp .env.example .env.local   # NEXT_PUBLIC_API_URL
-npm run dev                  # http://localhost:3000
+npm run dev
 ```
 
-Sahifalar:
-- `/` — so'nggi yangiliklar, Top 10, bugungi dayjest, trend mavzular, qidiruv
-- `/kategoriya/[slug]` — kategoriya bo'yicha
-- `/maqola/[slug]` — to'liq maqola (SEO meta, teglar, ulashish)
-- `/qidiruv?q=...` — qidiruv
-- `/admin` — admin panel (token bilan kirish)
-
-## 3. Telegram botni ishga tushirish
+### Telegram bot
 
 ```bash
 cd bot
 pip install -r requirements.txt
-cp .env.example .env         # TELEGRAM_BOT_TOKEN, API_URL
 python bot.py
 ```
 
-Bot funksiyalari: 📰 bugungi yangiliklar · 🗓 haftalik dayjest · 📂 kategoriyalar · 🔍 qidiruv · ⭐ saqlanganlar · 🔔 bildirishnomalar.
+## Muhim konfiguratsiyalar
 
-## REST API (asosiy endpointlar)
+| O‘zgaruvchi | Standart | Vazifasi |
+|---|---:|---|
+| `DATABASE_URL` | SQLite | PostgreSQL/SQLite ulanishi |
+| `ADMIN_TOKEN` | yo‘q | Admin login siri; kamida 24 belgi |
+| `JWT_SECRET_KEY` | `ADMIN_TOKEN` | Ixtiyoriy alohida JWT siri |
+| `AI_PROVIDER` | `gemini` | `gemini`, `vertex` yoki `claude` |
+| `AUTO_PUBLISH` | `true` | Mos darslarni avtomatik chop etish |
+| `AUTO_PUBLISH_MIN_IMPORTANCE` | `1` | Avto-chop uchun minimal baho |
+| `AUTO_TELEGRAM` | `true` | Chop etilgan muhim darslarni yuborish |
+| `AUTO_TELEGRAM_MIN_IMPORTANCE` | `4` | Telegram uchun minimal baho |
+| `RUN_BACKGROUND_SERVICES` | `true` | API jarayonida pipeline/botni yuritish |
+| `FRONTEND_ORIGIN` | `http://localhost:3000` | Kanonik frontend manzili |
+| `CORS_ORIGINS` | `FRONTEND_ORIGIN` | Vergul bilan ajratilgan ruxsatli originlar |
+| `BACKEND_PUBLIC_URL` | `http://localhost:8000` | Media fayllarning tashqi API manzili |
 
-| Metod | Yo'l | Tavsif |
+Barcha mavjud parametrlar `.env.example` faylida ko‘rsatilgan.
+
+## Asosiy API endpointlar
+
+### Ommaviy
+
+| Metod | Yo‘l | Vazifasi |
 |---|---|---|
-| GET | `/api/news` | So'nggi yangiliklar (`kategoriya`, `limit`, `offset`) |
-| GET | `/api/news/top` | Top yangiliklar (`kunlar`, `limit`) |
-| GET | `/api/news/digest` | Bugungi dayjest |
-| GET | `/api/news/trends` | Trend teglar |
+| GET | `/api/news` | Chop etilgan darslar |
 | GET | `/api/news/search?q=` | Qidiruv |
-| GET | `/api/news/{slug}` | Bitta maqola |
+| GET | `/api/news/trends` | Ommabop teglar |
+| GET | `/api/news/rss` | RSS feed |
+| GET | `/api/news/{slug}` | Bitta dars |
+| GET | `/api/news/{slug}/related` | O‘xshash darslar |
+| GET | `/api/news/{slug}/audio` | Keshlangan/TTS audio |
+| GET | `/api/news/ideas/match` | Mezonga mos biznes g‘oyalari |
+| POST | `/api/news/subscribe` | Email obuna |
 | GET | `/api/categories` | Kategoriyalar |
-| GET | `/api/admin/articles` | Admin: maqolalar ro'yxati (`X-Admin-Token`) |
-| PUT | `/api/admin/articles/{id}` | Admin: tahrirlash |
-| POST | `/api/admin/articles/{id}/approve` | Admin: tasdiqlash → saytga chiqarish |
-| POST | `/api/admin/articles/{id}/telegram` | Admin: Telegram kanaliga yuborish |
-| DELETE | `/api/admin/articles/{id}` | Admin: o'chirish |
-| GET | `/api/admin/stats` | Admin: statistika |
 
-To'liq interaktiv hujjatlar: `http://localhost:8000/docs`
+### Admin
 
-## Ish oqimi (workflow)
+`POST /api/admin/login` admin tokenni tekshiradi va JWT qaytaradi. Qolgan admin endpointlari `Authorization: Bearer <jwt>` talab qiladi.
 
-**Avtomatik rejim (standart, `AUTO_PUBLISH=true`):**
+- `GET /api/admin/articles`
+- `PUT /api/admin/articles/{id}`
+- `POST /api/admin/articles/{id}/approve`
+- `POST /api/admin/articles/{id}/reject`
+- `POST /api/admin/articles/{id}/telegram`
+- `DELETE /api/admin/articles/{id}`
+- `POST /api/admin/send-digest`
+- `GET /api/admin/stats`
 
-1. Cron har soatda `python -m app.pipeline` ni ishga tushiradi
-2. RSS'dan yangiliklar yig'iladi, dublikatlar filtrlanadi, Claude har birini o'zbekcha maqolaga aylantiradi
-3. Maqolalar **darhol saytga chiqadi**; muhimlari (bahosi ≥ `AUTO_TELEGRAM_MIN_IMPORTANCE`, standart 4) **Telegram kanalga ham avtomatik yuboriladi**
-4. Admin `/admin` panelda faqat nazorat qiladi: xato maqolani tahrirlaydi yoki o'chiradi
+Admin token frontend bundle’da saqlanmaydi. JWT faqat brauzer sessiyasi davomida `sessionStorage`da turadi.
 
-Sozlamalar (`.env`):
+## Test va tekshiruvlar
 
-| O'zgaruvchi | Standart | Tavsif |
-|---|---|---|
-| `AUTO_PUBLISH` | `true` | `false` — maqolalar admin tasdig'ini kutadi |
-| `AUTO_PUBLISH_MIN_IMPORTANCE` | `1` | Shu bahodan pastlari `pending`da qoladi |
-| `AUTO_TELEGRAM` | `true` | Muhim yangiliklarni kanalga avto-yuborish |
-| `AUTO_TELEGRAM_MIN_IMPORTANCE` | `4` | Kanalga yuborish uchun minimal baho |
+```bash
+cd backend
+python -m pytest -q
+python -m compileall -q app
 
-**Moderatsiya rejimi (`AUTO_PUBLISH=false`):** maqolalar `pending` holatda saqlanadi, admin `/admin` sahifasida ko'rib **Tasdiqlash** bosgachgina saytga chiqadi va **Telegramga** tugmasi bilan kanalga yuboradi.
+cd ../frontend
+npm run build
+npm audit --omit=dev
 
-## Kelajakdagi rejalar (TZ bo'yicha)
+cd ..
+docker compose config --quiet
+```
 
-- Redis kesh, email obuna, push bildirishnomalar
-- AI Tool katalogi, tadbirlar taqvimi, ish o'rinlari, kurslar
-- Ovozli dayjest, YouTube Shorts, avtomatik SMM postlar
-- Premium obuna va reklama moduli
-- Mobil ilova
+## Deploy
+
+- `render.yaml` backend, pipeline va botni bitta Render web-service jarayonida yuritish uchun sozlangan.
+- `frontend/vercel.json` frontendni Vercel’da joylashtirish uchun ishlatiladi.
+- Render’da `DATABASE_URL`, `ADMIN_TOKEN`, `BACKEND_PUBLIC_URL` va AI/Telegram sirlarini alohida kiriting.
+- Vercel’da `NEXT_PUBLIC_API_URL` backendning HTTPS manziliga teng bo‘lishi kerak.
+
+Sirlarni Git’ga commit qilmang. `.env`, service-account JSON va lokal bazalar `.gitignore` orqali chiqarib tashlangan.

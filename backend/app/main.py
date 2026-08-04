@@ -16,12 +16,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .config import (
+    BACKEND_PUBLIC_URL,
+    CORS_ORIGINS,
     FRONTEND_ORIGIN,
     MEDIA_DIR,
     RUN_BACKGROUND_SERVICES,
     validate_production_settings,
 )
-from .database import Base, SessionLocal, engine
+from .database import SessionLocal
 from .models import Article, IdeaProposal, IdeaProposalRun
 from .routers import admin, categories, news
 from .seed import prune_legacy_content, seed_categories
@@ -93,7 +95,6 @@ async def keep_alive_task():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     validate_production_settings()
-    Base.metadata.create_all(engine)
     db = SessionLocal()
     try:
         seed_categories(db)
@@ -127,8 +128,12 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=[
+        origin.strip()
+        for origin in CORS_ORIGINS.split(",")
+        if origin.strip()
+    ],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
