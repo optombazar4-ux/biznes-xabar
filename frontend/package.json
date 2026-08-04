@@ -21,7 +21,7 @@
     "@vitejs/plugin-react": "^4.0.0",
     "jsdom": "^25.0.0",
     "tailwindcss": "^4.0.0",
-    "vitest": "^3.0.0"
+    "vitest": "^3.2.7"
   },
   "overrides": {
     "postcss": "8.5.25",
