@@ -215,6 +215,27 @@ IDEA_TOPIC_TAGS = {
     "Meva va yong'oqdan sog'lom tamaddi mahsulotlari tayyorlash": [
         "5 mln gacha", "uydan", "qishloq", "ishlab chiqarish", "savdo",
     ],
+    "Telegram orqali uy ta'mirlash va qurilish xizmatlarini buyurtma qilish": [
+        "onlayn", "xizmat",
+    ],
+    "Sog'lom tayyor taomlarni obuna asosida yetkazib berish": [
+        "5 mln gacha", "onlayn", "xizmat",
+    ],
+    "Avtomobil salonlarini professional tozalash xizmati": [
+        "xizmat",
+    ],
+    "Yangi tug'ilgan chaqaloqlar uchun sovg'a to'plamlari tayyorlash": [
+        "uydan", "ishlab chiqarish", "savdo",
+    ],
+    "Bog' va tomorqa uchun ko'chat yetishtirish va sotish": [
+        "qishloq", "ishlab chiqarish", "savdo",
+    ],
+    "Kichik bizneslar uchun masofaviy hisob va soliq yordami xizmati": [
+        "onlayn", "xizmat",
+    ],
+    "Qo'lda tayyorlangan zargarlik va aksessuarlarni onlayn sotish": [
+        "uydan", "onlayn", "ishlab chiqarish", "savdo",
+    ],
 }
 IDEA_TOPICS = list(IDEA_TOPIC_TAGS)
 
@@ -273,6 +294,20 @@ LESSON_TOPICS = [("biznes-goyalari", topic) for topic in IDEA_TOPICS] + [
     ("amaliy-konikmalar", "Risk (tavakkalchilik)ni boshqarish asoslari"),
     ("amaliy-konikmalar", "Mijoz shikoyatlari bilan qanday ishlash kerak"),
     ("amaliy-konikmalar", "Sheriklik biznesi: qoidalari, afzalliklari va kamchiliklari"),
+
+    # --- Qo'shimcha yangi darslar (katalogni yangi kontent bilan to'ldiradi) ---
+    ("biznesni-boshlash", "Franshiza olish: afzalliklari, xavflari va qanday tanlash"),
+    ("biznesni-boshlash", "Biznes uchun joy (binol) tanlash mezonlari"),
+    ("moliya", "Kichik biznesda moliyaviy zaxira fondini qanday yaratish"),
+    ("moliya", "Narx strategiyalari: qiymat, raqobat va psixologik narxlar"),
+    ("marketing-sotuv", "Mijoz segmentatsiyasi: kimga xizmat ko'rsatishni bilish"),
+    ("marketing-sotuv", "Kontent-marketing: foydali kontent orqali sotuvni oshirish"),
+    ("boshqaruv", "Xodimlarni rag'batlantirish va motivatsiya usullari"),
+    ("boshqaruv", "Biznesda muntazam hisobot va tahlil odatlarini shakllantirish"),
+    ("onlayn-biznes", "Onlayn kurs va bilim mahsulotini sotish"),
+    ("onlayn-biznes", "Telegram kanal orqali biznes qurish strategiyasi"),
+    ("amaliy-konikmalar", "Tanqid va salbiy fikr bilan qanday ishlash kerak"),
+    ("amaliy-konikmalar", "Biznesda kichik tajribalar (experiments) orqali innovatsiya"),
 ]
 
 SYSTEM_PROMPT = """**Rol:** Sen tajribali o'zbek biznes-murabbiysan. O'zbekistonda biznes ochish va yuritish amaliyotini, mahalliy qonunchilik va bozor sharoitini yaxshi bilasan.
