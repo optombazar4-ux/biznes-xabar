@@ -10,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
 from app.models import Article, Category
-from app.routers.news import lesson_stats
+from app.routers.news import lesson_stats, sitemap_lessons
 
 
 class LessonStatsTests(unittest.TestCase):
@@ -66,6 +66,20 @@ class LessonStatsTests(unittest.TestCase):
         stats = lesson_stats(self.db)
         self.assertEqual(stats["jami_darslar"], 0)
         self.assertEqual(stats["biznes_goyalar"], 0)
+
+    def test_sitemap_returns_all_published_articles_without_content(self):
+        items = sitemap_lessons(self.db)
+
+        self.assertEqual(len(items), 3)
+        self.assertEqual(
+            {item["slug"] for item in items},
+            {"goya-1", "goya-2", "moliya-1"},
+        )
+        self.assertTrue(all("content" not in item for item in items))
+        self.assertEqual(
+            {item["category_slug"] for item in items},
+            {"biznes-goyalari", "moliya"},
+        )
 
 
 if __name__ == "__main__":

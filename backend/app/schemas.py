@@ -38,6 +38,16 @@ class ArticleOut(BaseModel):
     created_at: datetime
 
 
+class SitemapArticleOut(BaseModel):
+    """Sitemap uchun kontent matnisiz yengil maqola yozuvi."""
+
+    slug: str
+    category_slug: str
+    tags: list[str]
+    published_at: datetime | None
+    created_at: datetime
+
+
 class ArticleUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=300)
     seo_title: str | None = Field(default=None, max_length=300)

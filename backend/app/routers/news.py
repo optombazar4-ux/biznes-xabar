@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Article, Category
-from ..schemas import ArticleOut, SubscribeIn
+from ..schemas import ArticleOut, SitemapArticleOut, SubscribeIn
 from ..services.education import LESSON_TOPICS
 from ..services.audio import generate_article_audio
 from ..rate_limit import enforce_rate_limit
@@ -202,6 +202,34 @@ def lesson_stats(db: Session = Depends(get_db)):
         .count()
     )
     return {"jami_darslar": total, "biznes_goyalar": ideas}
+
+
+@router.get("/sitemap", response_model=list[SitemapArticleOut])
+def sitemap_lessons(db: Session = Depends(get_db)):
+    """Sitemap uchun barcha chop etilgan darslarning yengil ro'yxati."""
+    rows = (
+        published(db)
+        .outerjoin(Category)
+        .with_entities(
+            Article.slug,
+            Category.slug.label("category_slug"),
+            Article.tags,
+            Article.published_at,
+            Article.created_at,
+        )
+        .order_by(Article.published_at.desc(), Article.id.desc())
+        .all()
+    )
+    return [
+        {
+            "slug": row.slug,
+            "category_slug": row.category_slug or "biznesni-boshlash",
+            "tags": row.tags or [],
+            "published_at": row.published_at,
+            "created_at": row.created_at,
+        }
+        for row in rows
+    ]
 
 
 @router.get("/ideas/match", response_model=list[ArticleOut])

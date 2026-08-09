@@ -78,6 +78,15 @@ export async function apiGet(path, params = {}) {
       ).length,
     };
   }
+  if (path === "/api/news/sitemap") {
+    return (fallbackData.articles || []).map((article) => ({
+      slug: article.slug,
+      category_slug: article.category?.slug || "biznesni-boshlash",
+      tags: article.tags || [],
+      published_at: article.published_at || null,
+      created_at: article.created_at,
+    }));
+  }
   if (path.startsWith("/api/news/") && path.endsWith("/related")) {
     const parts = path.split("/");
     const slug = parts[3];
