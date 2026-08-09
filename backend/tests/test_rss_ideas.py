@@ -120,18 +120,21 @@ class SuggestionValidationTests(unittest.TestCase):
 
 
 class ProposalScheduleTests(unittest.TestCase):
-    def test_completed_batch_waits_one_week(self):
+    def test_completed_batch_waits_one_day(self):
         engine = create_engine("sqlite:///:memory:")
         Base.metadata.create_all(engine)
         with sessionmaker(bind=engine)() as db:
-            self.assertTrue(proposal_batch_is_due(db))
-            run = IdeaProposalRun(status="completed")
-            db.add(run)
-            db.commit()
-            self.assertFalse(proposal_batch_is_due(db))
-            run.created_at = utcnow_naive() - timedelta(days=8)
-            db.commit()
-            self.assertTrue(proposal_batch_is_due(db))
+            with patch("app.services.rss_ideas.RSS_IDEA_INTERVAL_DAYS", 1):
+                self.assertTrue(proposal_batch_is_due(db))
+                run = IdeaProposalRun(status="completed")
+                db.add(run)
+                db.commit()
+                run.created_at = utcnow_naive() - timedelta(hours=23)
+                db.commit()
+                self.assertFalse(proposal_batch_is_due(db))
+                run.created_at = utcnow_naive() - timedelta(hours=25)
+                db.commit()
+                self.assertTrue(proposal_batch_is_due(db))
 
 
 class PipelineStageTests(unittest.TestCase):

@@ -3,7 +3,7 @@ bilan to'ldiradi.
 
 Har ishga tushganda hali yoritilmagan mavzulardan bir nechtasini tanlaydi,
 AI orqali dars yaratadi va saqlaydi. Kuratsiya qilingan biznes g'oyalari
-tugagach, haftalik RSS trendlaridan validatsiyalangan yangi g'oyalar taklif
+tugagach, kunlik RSS trendlaridan validatsiyalangan yangi g'oyalar taklif
 qilinadi va maqolaga aylantiriladi.
 
 AUTO_PUBLISH=true bo'lsa minimal muhimlik chegarasidan o'tgan darslar saytga
@@ -288,17 +288,17 @@ def run_pipeline(per_feed: int = 0) -> int:
         else:
             batch = []
 
-        # 2-bosqich: katalog tugagach, har hafta RSS trendlaridan 5–10 ta
+        # 2-bosqich: katalog tugagach, har kuni RSS trendlaridan 5–10 ta
         # taklif olinadi. Faqat validatsiyadan o'tgan navbat maqolaga aylanadi.
         if not idea_remaining and RSS_IDEA_ENABLED:
-            print("📡 Kuratsiya katalogi tayyor. Haftalik RSS trendlar tekshirilmoqda...")
+            print("📡 Kuratsiya katalogi tayyor. Kunlik RSS trendlar tekshirilmoqda...")
             try:
                 create_weekly_proposals(db)
             except Exception as error:
                 # RSS yoki taklif AI vaqtincha ishlamasa ham asosiy kurikulum
                 # va API ishlashda davom etadi.
                 db.rollback()
-                print(f"   ✗ Haftalik RSS-AI takliflari xatosi: {error}")
+                print(f"   ✗ Kunlik RSS-AI takliflari xatosi: {error}")
             proposals = (
                 db.query(IdeaProposal)
                 .filter(IdeaProposal.status == "approved")
@@ -321,7 +321,7 @@ def run_pipeline(per_feed: int = 0) -> int:
                 print(f"\n✅ {created} ta yangi RSS-trend g'oyasi yaratildi.")
                 return created
 
-        # Haftalik taklif navbati bo'sh bo'lsa, umumiy biznes kurikulumi davom etadi.
+        # Kunlik taklif navbati bo'sh bo'lsa, umumiy biznes kurikulumi davom etadi.
         if not batch and other_remaining:
             random.shuffle(other_remaining)
             batch = other_remaining[:LESSON_BATCH_PER_RUN]

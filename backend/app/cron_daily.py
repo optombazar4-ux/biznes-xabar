@@ -13,8 +13,12 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 def main():
     logging.info("🚀 Kunlik avtomatik kontent generatsiyasi boshlandi...")
     try:
-        articles = run_pipeline(count=1)
-        logging.info(f"✅ Muvaffaqiyatli {len(articles)} ta yangi biznes darsi yaratildi va indeksatsiyaga yuborildi!")
+        saved = run_pipeline()
+        logging.info(
+            "✅ Muvaffaqiyatli %s ta yangi biznes darsi yaratildi va "
+            "indeksatsiyaga yuborildi!",
+            saved,
+        )
     except Exception as e:
         logging.error(f"❌ Kontent generatsiyasida xatolik: {e}")
         sys.exit(1)

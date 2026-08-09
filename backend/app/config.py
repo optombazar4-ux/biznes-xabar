@@ -69,9 +69,9 @@ def _bool(name: str, default: str) -> bool:
 RUN_BACKGROUND_SERVICES = _bool("RUN_BACKGROUND_SERVICES", "true")
 
 # Kuratsiya qilingan katalog tugagach, xalqaro biznes RSS trendlaridan
-# O'zbekistonga mos yangi g'oyalar taklif qilinadi.
+# O'zbekistonga mos yangi g'oyalar har kuni taklif qilinadi.
 RSS_IDEA_ENABLED = _bool("RSS_IDEA_ENABLED", "true")
-RSS_IDEA_INTERVAL_DAYS = max(1, int(os.getenv("RSS_IDEA_INTERVAL_DAYS", "3")))
+RSS_IDEA_INTERVAL_DAYS = max(1, int(os.getenv("RSS_IDEA_INTERVAL_DAYS", "1")))
 RSS_IDEA_SUGGESTIONS_PER_BATCH = max(
     5, min(10, int(os.getenv("RSS_IDEA_SUGGESTIONS_PER_BATCH", "8")))
 )
