@@ -308,6 +308,24 @@ LESSON_TOPICS = [("biznes-goyalari", topic) for topic in IDEA_TOPICS] + [
     ("onlayn-biznes", "Telegram kanal orqali biznes qurish strategiyasi"),
     ("amaliy-konikmalar", "Tanqid va salbiy fikr bilan qanday ishlash kerak"),
     ("amaliy-konikmalar", "Biznesda kichik tajribalar (experiments) orqali innovatsiya"),
+
+    # --- 2026-yilgi amaliy darslar to'plami ---
+    ("biznesni-boshlash", "O'zbekistonda tadbirkorlik grantlari va imtiyozli kreditlar olish"),
+    ("biznesni-boshlash", "Yangi biznes uchun brend nom va domen tanlash sirlari"),
+    ("biznesni-boshlash", "Yetkazib beruvchilar va ulgurji sotuvchilar bilan ishlash qoidalari"),
+    ("moliya", "Birim iqtisodiyoti (Unit Economics): har bir mijozdan daromadni hisoblash"),
+    ("moliya", "Mikrobiznes uchun soddalashtirilgan buxgalteriya va hisobotlar"),
+    ("moliya", "Debitorlik qarzdorlikni (qarzni) kamaytirish va undirish usullari"),
+    ("marketing-sotuv", "Maqsadli auditoriyani aniqlash va mijoz portretini yaratish"),
+    ("marketing-sotuv", "O'zbekistonda Influencer marketing va blogerlar bilan ishlash"),
+    ("marketing-sotuv", "Mijozlar bilan qayta aloqa va CRM tizimlarini qo'llash"),
+    ("marketing-sotuv", "Sotuv matnlari yozish (Kopirayting) asoslari"),
+    ("boshqaruv", "Biznesda risklarni boshqarish va inqirozga qarshi reja"),
+    ("boshqaruv", "Masofaviy jamoani samarali boshqarish vositalari"),
+    ("onlayn-biznes", "SEO optimallashtirish: saytni Google va Yandex'da yuqoriga chiqarish"),
+    ("onlayn-biznes", "Marketpleyslarda tovarlarni to'g'ri joylashtirish va sotuvni oshirish"),
+    ("amaliy-konikmalar", "Tadbirkorlikda hissiy intellekt (EQ) va stressni boshqarish"),
+    ("amaliy-konikmalar", "Biznes sheriklar o'rtasida taqsimot va shartnoma tuzish"),
 ]
 
 SYSTEM_PROMPT = """**Rol:** Sen tajribali o'zbek biznes-murabbiysan. O'zbekistonda biznes ochish va yuritish amaliyotini, mahalliy qonunchilik va bozor sharoitini yaxshi bilasan.
