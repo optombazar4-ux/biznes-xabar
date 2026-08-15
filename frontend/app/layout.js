@@ -154,7 +154,20 @@ export default function RootLayout({ children }) {
               📢 Telegram Kanal (@biznesxabari)
             </a>
           </div>
-          © {new Date().getFullYear()} Biznes Darslari (biznesdarslari.uz) — O&apos;zbekistonda biznes ochish va yuritish bo&apos;yicha amaliy darslar
+          <div>
+            © {new Date().getFullYear()} Biznes Darslari (biznesdarslari.uz) — O&apos;zbekistonda biznes ochish va yuritish bo&apos;yicha amaliy darslar
+          </div>
+          <div className="mt-3 text-xs text-slate-500">
+            Dasturiy ta&apos;minot va IT avtomatlashtirish:{" "}
+            <a
+              href="https://trendoai.uz"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-indigo-400 font-semibold hover:text-indigo-300 transition-colors"
+            >
+              TrendoAI
+            </a>
+          </div>
         </footer>
         <MobileNav />
         <SubscribePopup />
