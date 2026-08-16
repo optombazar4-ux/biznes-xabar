@@ -1,5 +1,6 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from typing import Any
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class AdminLoginIn(BaseModel):
@@ -36,6 +37,18 @@ class ArticleOut(BaseModel):
     sent_to_telegram: bool
     published_at: datetime | None
     created_at: datetime
+
+    @field_validator("quiz", mode="before")
+    @classmethod
+    def _normalize_quiz(cls, value: Any) -> Any:
+        """Eski yozuvlarda `quiz` bitta obyekt bo'lishi mumkin.
+
+        Bunday qiymat validatsiyani yiqitib, butun endpoint'ni 500 qilardi.
+        Frontend faqat ro'yxatni ko'rsatgani uchun obyektni ro'yxatga o'raymiz.
+        """
+        if isinstance(value, dict):
+            return [value]
+        return value
 
 
 class SitemapArticleOut(BaseModel):

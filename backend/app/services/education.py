@@ -23,6 +23,16 @@ from ..config import (
     VERTEX_GEMINI_MODEL,
 )
 
+# AI chaqiruvi ishlamay, zaxira shablon qaytarilganini bildiruvchi kalit.
+# Bunday kontent haqiqiy dars emas, shuning uchun avtomatik chop etilmaydi.
+FALLBACK_FLAG = "_fallback"
+
+
+def is_fallback(lesson: dict) -> bool:
+    """Dars AI emas, zaxira shablondan kelganini aytadi."""
+    return bool(lesson.get(FALLBACK_FLAG))
+
+
 # O'zbekiston bozoriga mos konkret g'oyalar. Qiymatlar frontenddagi filtrlar va
 # AI yaratgan maqolalarning standart teglarini belgilaydi.
 IDEA_FILTERS = (
@@ -449,6 +459,11 @@ def _generate_with_gemini(topic: str, user_prompt: str | None = None) -> dict:
 
 
 def _generate_curated_fallback(topic: str) -> dict:
+    """AI chaqiruvi ishlamaganda ishlatiladigan zaxira shablon.
+
+    Natijada FALLBACK_FLAG kaliti bo'ladi — pipeline shu belgiga qarab bunday
+    darsni saytga avtomatik chiqarmay, admin ko'rigi uchun "pending" qoldiradi.
+    """
     tags = IDEA_TOPIC_TAGS.get(topic, ["tadbirkorlik", "amaliy dars", "biznes-goyalari"])
     title = topic if "xizmat" in topic.lower() or "biznes" in topic.lower() or "va" in topic.lower() else f"{topic}: O'zbekiston Sharoitida Amaliy Yo'riqnoma"
     summary = f"{topic} bo'yicha O'zbekiston bozoriga moslashtirilgan 7 kunlik amaliy sinov rejasi, boshlang'ich kapital va birinchi sotuv yo'riqnomasi."
@@ -476,17 +491,20 @@ O'zbekistonda ushbu yo'nalish bo'yicha talab barqaror o'sib bormoqda. Kichik kap
 O'zbekistonda ushbu faoliyat uchun YaTT (Yakka tartibdagi tadbirkor) yoki o'zini o'zi band qilgan shaxs sifatida ro'yxatdan o'tish tavsiya etiladi. 2026-yilgi amaldagi tartibga ko'ra aylanma solig'i 1% stavkada belgilanadi.""",
         "amaliy_ahamiyat": f"{topic}ni boshlashda katta ofis va qimmat uskuna shart emas. Avval minimal xizmat taklifi bilan 3 ta real mijozni sinab ko'ring.",
         "teglar": tags,
-        "quiz": {
-            "question": f"{topic}ni boshlashda birinchi muhim qadam nima?",
-            "options": [
-                "Katta ofis ijaraga olish va qimmat mebel sotib olish",
-                "Minimal xizmat taklifi (MVP) bilan bozordagi talabni sinab ko'rish",
-                "Darhol 10 ta xodimni ishga yollash",
-                "Reklamaga 20 mln so'm sarflash",
-            ],
-            "answer_index": 1,
-            "explanation": "Har qanday kichik biznesni boshlashda birinchi navbatda minimal xarajat bilan bozordagi real talabni (MVP) sinab ko'rish kerak.",
-        },
+        "quiz": [
+            {
+                "question": f"{topic}ni boshlashda birinchi muhim qadam nima?",
+                "options": [
+                    "Katta ofis ijaraga olish va qimmat mebel sotib olish",
+                    "Minimal xizmat taklifi (MVP) bilan bozordagi talabni sinab ko'rish",
+                    "Darhol 10 ta xodimni ishga yollash",
+                    "Reklamaga 20 mln so'm sarflash",
+                ],
+                "answer_index": 1,
+                "explanation": "Har qanday kichik biznesni boshlashda birinchi navbatda minimal xarajat bilan bozordagi real talabni (MVP) sinab ko'rish kerak.",
+            }
+        ],
+        FALLBACK_FLAG: True,
     }
 
 
@@ -578,6 +596,38 @@ def _clean_tags(tags) -> list[str]:
     return cleaned[:6]
 
 
+def _clean_quiz(quiz) -> list[dict]:
+    """Quiz'ni frontend kutgan ko'rinishga keltiradi: to'liq savollar ro'yxati.
+
+    Model ba'zan sxemani buzib bitta savol obyektini qaytaradi; LessonQuiz esa
+    faqat massivni ko'rsatadi. Shuning uchun dict bo'lsa ro'yxatga o'raymiz va
+    to'liqsiz savollarni tashlab yuboramiz.
+    """
+    if isinstance(quiz, dict):
+        quiz = [quiz]
+    if not isinstance(quiz, list):
+        return []
+
+    cleaned = []
+    for item in quiz:
+        if not isinstance(item, dict):
+            continue
+        question = str(item.get("question") or "").strip()
+        options = [str(o).strip() for o in (item.get("options") or []) if str(o).strip()]
+        answer_index = item.get("answer_index")
+        if not question or len(options) < 2 or not isinstance(answer_index, int):
+            continue
+        if not 0 <= answer_index < len(options):
+            continue
+        cleaned.append({
+            "question": question,
+            "options": options,
+            "answer_index": answer_index,
+            "explanation": str(item.get("explanation") or "").strip(),
+        })
+    return cleaned
+
+
 def generate_lesson(topic: str) -> dict:
     """Bitta biznes darsi maqolasini yaratadi."""
     if AI_PROVIDER == "claude":
@@ -591,6 +641,7 @@ def generate_lesson(topic: str) -> dict:
     # G'oya filtrlari model javobiga bog'liq bo'lmasin; tartibni saqlab,
     # takrorlarni olib tashlaymiz.
     result["teglar"] = list(dict.fromkeys([*required_tags, *generated_tags]))[:6]
+    result["quiz"] = _clean_quiz(result.get("quiz"))
     return result
 
 
@@ -611,4 +662,5 @@ def generate_dynamic_idea(
         result = _generate_with_gemini(topic, prompt)
     generated_tags = _clean_tags(result.get("teglar"))
     result["teglar"] = list(dict.fromkeys([*safe_filters, *generated_tags]))[:6]
+    result["quiz"] = _clean_quiz(result.get("quiz"))
     return result

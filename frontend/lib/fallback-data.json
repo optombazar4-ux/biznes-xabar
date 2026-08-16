@@ -12,17 +12,19 @@
         "5 mln gacha",
         "xizmat"
       ],
-      "quiz": {
-        "question": "Keksalar uchun xarid va kundalik yumushlar yordamchisini boshlashda birinchi muhim qadam nima?",
-        "options": [
-          "Katta ofis ijaraga olish va qimmat mebel sotib olish",
-          "Minimal xizmat taklifi (MVP) bilan bozordagi talabni sinab ko'rish",
-          "Darhol 10 ta xodimni ishga yollash",
-          "Reklamaga 20 mln so'm sarflash"
-        ],
-        "answer_index": 1,
-        "explanation": "Har qanday kichik biznesni boshlashda birinchi navbatda minimal xarajat bilan bozordagi real talabni (MVP) sinab ko'rish kerak."
-      },
+      "quiz": [
+        {
+          "question": "Keksalar uchun xarid va kundalik yumushlar yordamchisini boshlashda birinchi muhim qadam nima?",
+          "options": [
+            "Katta ofis ijaraga olish va qimmat mebel sotib olish",
+            "Minimal xizmat taklifi (MVP) bilan bozordagi talabni sinab ko'rish",
+            "Darhol 10 ta xodimni ishga yollash",
+            "Reklamaga 20 mln so'm sarflash"
+          ],
+          "answer_index": 1,
+          "explanation": "Har qanday kichik biznesni boshlashda birinchi navbatda minimal xarajat bilan bozordagi real talabni (MVP) sinab ko'rish kerak."
+        }
+      ],
       "importance": 3,
       "original_title": "Keksalar uchun xarid va kundalik yumushlar yordamchisi",
       "original_url": "internal://dars/keksalar-uchun-xarid-va-kundalik-yumushlar-yordamchisi",
@@ -54,17 +56,19 @@
         "onlayn",
         "xizmat"
       ],
-      "quiz": {
-        "question": "Kir yuvish xizmatlari uchun olib ketish va qaytarish servisini boshlashda birinchi muhim qadam nima?",
-        "options": [
-          "Katta ofis ijaraga olish va qimmat mebel sotib olish",
-          "Minimal xizmat taklifi (MVP) bilan bozordagi talabni sinab ko'rish",
-          "Darhol 10 ta xodimni ishga yollash",
-          "Reklamaga 20 mln so'm sarflash"
-        ],
-        "answer_index": 1,
-        "explanation": "Har qanday kichik biznesni boshlashda birinchi navbatda minimal xarajat bilan bozordagi real talabni (MVP) sinab ko'rish kerak."
-      },
+      "quiz": [
+        {
+          "question": "Kir yuvish xizmatlari uchun olib ketish va qaytarish servisini boshlashda birinchi muhim qadam nima?",
+          "options": [
+            "Katta ofis ijaraga olish va qimmat mebel sotib olish",
+            "Minimal xizmat taklifi (MVP) bilan bozordagi talabni sinab ko'rish",
+            "Darhol 10 ta xodimni ishga yollash",
+            "Reklamaga 20 mln so'm sarflash"
+          ],
+          "answer_index": 1,
+          "explanation": "Har qanday kichik biznesni boshlashda birinchi navbatda minimal xarajat bilan bozordagi real talabni (MVP) sinab ko'rish kerak."
+        }
+      ],
       "importance": 3,
       "original_title": "Kir yuvish xizmatlari uchun olib ketish va qaytarish servisi",
       "original_url": "internal://dars/kir-yuvish-xizmatlari-uchun-olib-ketish-va-qaytarish-servisi",
@@ -97,17 +101,19 @@
         "savdo",
         "xizmat"
       ],
-      "quiz": {
-        "question": "Mahalliy fermerlar uchun yem va urug' buyurtma xizmatini boshlashda birinchi muhim qadam nima?",
-        "options": [
-          "Katta ofis ijaraga olish va qimmat mebel sotib olish",
-          "Minimal xizmat taklifi (MVP) bilan bozordagi talabni sinab ko'rish",
-          "Darhol 10 ta xodimni ishga yollash",
-          "Reklamaga 20 mln so'm sarflash"
-        ],
-        "answer_index": 1,
-        "explanation": "Har qanday kichik biznesni boshlashda birinchi navbatda minimal xarajat bilan bozordagi real talabni (MVP) sinab ko'rish kerak."
-      },
+      "quiz": [
+        {
+          "question": "Mahalliy fermerlar uchun yem va urug' buyurtma xizmatini boshlashda birinchi muhim qadam nima?",
+          "options": [
+            "Katta ofis ijaraga olish va qimmat mebel sotib olish",
+            "Minimal xizmat taklifi (MVP) bilan bozordagi talabni sinab ko'rish",
+            "Darhol 10 ta xodimni ishga yollash",
+            "Reklamaga 20 mln so'm sarflash"
+          ],
+          "answer_index": 1,
+          "explanation": "Har qanday kichik biznesni boshlashda birinchi navbatda minimal xarajat bilan bozordagi real talabni (MVP) sinab ko'rish kerak."
+        }
+      ],
       "importance": 3,
       "original_title": "Mahalliy fermerlar uchun yem va urug' buyurtma xizmati",
       "original_url": "internal://dars/mahalliy-fermerlar-uchun-yem-va-urug-buyurtma-xizmati",

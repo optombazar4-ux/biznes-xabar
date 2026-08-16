@@ -43,6 +43,7 @@ from .services.education import (
     LESSON_TOPICS,
     generate_dynamic_idea,
     generate_lesson,
+    is_fallback,
 )
 from .services.rss_ideas import create_weekly_proposals
 from .services.telegram import send_to_channel
@@ -107,7 +108,12 @@ def _create_lesson(db, categories, section_slug: str, topic: str) -> Article | N
 
     category = categories.get(section_slug)
     importance = 3
-    auto_publish = _should_auto_publish(importance)
+    # AI ishlamay zaxira shablon qaytgan bo'lsa, uni saytga chiqarmaymiz —
+    # admin ko'rib chiqishi uchun "pending" holatida qoladi.
+    from_fallback = is_fallback(lesson)
+    if from_fallback:
+        print("   ⚠ AI javob bermadi — zaxira shablon pending holatida saqlanadi")
+    auto_publish = _should_auto_publish(importance) and not from_fallback
     article = Article(
         title=lesson["sarlavha"],
         seo_title=lesson["seo_sarlavha"],
@@ -186,7 +192,10 @@ def _create_dynamic_idea(
 
     category = categories.get("biznes-goyalari")
     importance = 4
-    auto_publish = _should_auto_publish(importance)
+    from_fallback = is_fallback(lesson)
+    if from_fallback:
+        print("   ⚠ AI javob bermadi — zaxira shablon pending holatida saqlanadi")
+    auto_publish = _should_auto_publish(importance) and not from_fallback
     article = Article(
         title=lesson["sarlavha"],
         seo_title=lesson["seo_sarlavha"],
