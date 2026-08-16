@@ -59,9 +59,14 @@ def latest_lessons(
 
 @router.get("/trends")
 def trend_topics(db: Session = Depends(get_db), limit: int = 15):
-    """Ommabop teglar — barcha darslar bo'yicha eng ko'p uchraganlari."""
-    articles = published(db).all()
-    counter = Counter(tag for a in articles for tag in (a.tags or []))
+    """Ommabop teglar — barcha darslar bo'yicha eng ko'p uchraganlari.
+
+    Bosh sahifa har bir tashrifda shu endpointni chaqiradi, shuning uchun
+    faqat `tags` ustuni o'qiladi — maqola matnini tortish maqolalar soni
+    ortishi bilan javobni og'irlashtirardi.
+    """
+    rows = published(db).with_entities(Article.tags).all()
+    counter = Counter(tag for (tags,) in rows for tag in (tags or []))
     return [{"teg": tag, "soni": count} for tag, count in counter.most_common(limit)]
 
 
