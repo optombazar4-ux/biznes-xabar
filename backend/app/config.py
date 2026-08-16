@@ -88,7 +88,8 @@ AUTO_PUBLISH_MIN_IMPORTANCE = int(os.getenv("AUTO_PUBLISH_MIN_IMPORTANCE", "1"))
 
 # Muhim yangiliklarni Telegram kanalga avtomatik yuborish
 AUTO_TELEGRAM = _bool("AUTO_TELEGRAM", "true")
-AUTO_TELEGRAM_MIN_IMPORTANCE = int(os.getenv("AUTO_TELEGRAM_MIN_IMPORTANCE", "4"))
+AUTO_TELEGRAM_MIN_IMPORTANCE = int(os.getenv("AUTO_TELEGRAM_MIN_IMPORTANCE", "1"))
+
 
 # Rasm topilmaganda Gemini bilan generatsiya qilish (pullik — standart o'chiq)
 IMAGE_GENERATION = _bool("IMAGE_GENERATION", "false")

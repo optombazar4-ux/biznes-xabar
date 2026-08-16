@@ -35,7 +35,8 @@ services:
       - key: AUTO_TELEGRAM
         value: "true"
       - key: AUTO_TELEGRAM_MIN_IMPORTANCE
-        value: "4"
+        value: "1"
+
       - key: PIPELINE_INTERVAL
         value: "3600"
       - key: RSS_IDEA_ENABLED
