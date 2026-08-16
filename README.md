@@ -58,7 +58,7 @@ docker compose --profile bot up -d bot
 - Sayt: <http://localhost:3000>
 - Admin: <http://localhost:3000/admin>
 - API hujjatlari: <http://localhost:8000/docs>
-- Health check: <http://localhost:8000/health>
+- Health check: <http://localhost:8000/health> (yengil; batafsil holat — `/health/details`)
 
 Backend container ishga tushishidan oldin `python -m app.migrate` orqali Alembic migratsiyasini xavfsiz bajaradi. Pipeline backend sog‘lom bo‘lgandan keyin boshlanadi.
 

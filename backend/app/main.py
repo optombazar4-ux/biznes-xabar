@@ -25,10 +25,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from sqlalchemy import text
+
 from .config import (
     BACKEND_PUBLIC_URL,
     CORS_ORIGINS,
-    FRONTEND_ORIGIN,
     MEDIA_DIR,
     RUN_BACKGROUND_SERVICES,
     validate_production_settings,
@@ -82,22 +83,27 @@ async def bot_task():
 
 
 async def keep_alive_task():
-    """Server va sayt uxlab qolmasligi uchun har 5 daqiqada (300s) avtomatik self-ping yuboradi."""
+    """Render'da backend uxlab qolmasligi uchun har 5 daqiqada self-ping.
+
+    Faqat o'z /health manzili so'raladi. Frontend (Vercel) uxlamaydi, uni
+    ping qilish esa har safar bosh sahifaning barcha API chaqiruvlarini,
+    demak bazaga so'rovlarni ishga tushirardi — kuniga 288 marta, birorta
+    ham real tashrifchisiz. Shuning uchun u ro'yxatdan olib tashlandi.
+    """
     await asyncio.sleep(10)
     import httpx
-    urls = [
-        f"{BACKEND_PUBLIC_URL.rstrip('/')}/health",
-        FRONTEND_ORIGIN.rstrip("/"),
-    ]
+
+    url = f"{BACKEND_PUBLIC_URL.rstrip('/')}/health"
+    if not url.startswith("http"):
+        logger.warning("BACKEND_PUBLIC_URL noto'g'ri — keep-alive ishga tushmadi.")
+        return
+
     logger.info("Anti-Sleep (Keep-Alive Heartbeat) service started.")
-    while True:
-        await asyncio.sleep(300)  # 5 daqiqa
-        for url in urls:
-            if not url or not url.startswith("http"):
-                continue
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        while True:
+            await asyncio.sleep(300)  # 5 daqiqa
             try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    await client.get(url)
+                await client.get(url)
             except Exception:
                 pass
 
@@ -165,6 +171,41 @@ def root():
 
 @app.get("/health")
 def health():
+    """Yengil sog'liq tekshiruvi — Render va keep-alive buni muntazam chaqiradi.
+
+    Ilgari bu yerda bir necha COUNT va 100 elementli IN so'rovi bajarilardi,
+    ya'ni har bir tekshiruv bepul tarifdagi baza trafigini behuda sarflardi.
+    Endi faqat bitta arzon SELECT 1 bilan ulanish tekshiriladi; kontent
+    statistikasi /health/details ga ko'chirildi.
+
+    Baza ishlamaganda ham 200 qaytariladi ("degraded"), chunki qayta ishga
+    tushirish tashqi baza muammosini hal qilmaydi — faqat restart siklini
+    keltirib chiqaradi.
+    """
+    db = SessionLocal()
+    try:
+        db.execute(text("SELECT 1"))
+        database = "ok"
+    except Exception as error:
+        logger.warning("Health check DB xatosi: %s", type(error).__name__)
+        database = "error"
+    finally:
+        db.close()
+
+    return {
+        "status": "ok" if database == "ok" else "degraded",
+        "database": database,
+        "pipeline": PIPELINE_STATE,
+    }
+
+
+@app.get("/health/details")
+def health_details():
+    """Kontent quvuri bo'yicha batafsil holat — qo'lda tekshirish uchun.
+
+    Bir necha COUNT bajaradi, shuning uchun avtomatik monitoring emas,
+    faqat kerak bo'lganda chaqirilishi ko'zda tutilgan.
+    """
     db = SessionLocal()
     try:
         latest = db.query(Article).order_by(Article.created_at.desc()).first()
