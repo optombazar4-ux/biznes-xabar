@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { readingMinutes, levelForCategory, formatDate } from "../lib/lesson";
+import { articleMinutes, levelForCategory, formatDate } from "../lib/lesson";
 
 export default function ArticleCard({ article, compact = false }) {
   const category = article.category?.name || "Biznes darsi";
   const catSlug = article.category?.slug || "biznesni-boshlash";
   const href = `/${catSlug}/${article.slug}`;
   const level = levelForCategory(article.category?.slug);
-  const minutes = readingMinutes(article.content);
+  const minutes = articleMinutes(article);
   const date = formatDate(article.published_at);
 
   if (compact) {

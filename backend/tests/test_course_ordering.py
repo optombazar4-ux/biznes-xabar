@@ -28,10 +28,13 @@ class CourseOrderingTests(unittest.TestCase):
 
         # Kurikulumdan uchta mavzu — teskari tartibda kiritamiz
         self.topics = [topic for _, topic in LESSON_TOPICS[:3]]
+        self.slug_by_topic = {}
         for i, topic in enumerate(reversed(self.topics)):
+            slug = f"dars-{i}"
+            self.slug_by_topic[topic] = slug
             self.db.add(Article(
-                title=f"Dars {i}", slug=f"dars-{i}",
-                original_url=f"internal://dars/dars-{i}",
+                title=f"Dars {i}", slug=slug,
+                original_url=f"internal://dars/{slug}",
                 original_title=topic,
                 status="published", category_id=category.id,
                 content="Z" * 3000,
@@ -57,22 +60,35 @@ class CourseOrderingTests(unittest.TestCase):
         self.db.close()
         self.engine.dispose()
 
+    def _expected_slugs(self, topics):
+        return [self.slug_by_topic[topic] for topic in topics]
+
     def test_lessons_follow_curriculum_order(self):
         lessons = latest_lessons(self.db, kategoriya="moliya", tartib="kurs", limit=100)
 
-        self.assertEqual([a.original_title for a in lessons[:3]], self.topics)
+        self.assertEqual(
+            [a["slug"] for a in lessons[:3]], self._expected_slugs(self.topics)
+        )
 
     def test_unknown_topic_goes_last(self):
         lessons = latest_lessons(self.db, kategoriya="moliya", tartib="kurs", limit=100)
 
-        self.assertEqual(lessons[-1].original_title, "Kurikulumda yo'q mavzu")
+        self.assertEqual(lessons[-1]["slug"], "begona")
 
     def test_limit_and_offset_apply_in_curriculum_order(self):
         page = latest_lessons(
             self.db, kategoriya="moliya", tartib="kurs", limit=2, offset=1
         )
 
-        self.assertEqual([a.original_title for a in page], self.topics[1:3])
+        self.assertEqual(
+            [a["slug"] for a in page], self._expected_slugs(self.topics[1:3])
+        )
+
+    def test_content_is_not_fetched_but_reading_minutes_is_returned(self):
+        lessons = latest_lessons(self.db, kategoriya="moliya", tartib="kurs", limit=1)
+
+        self.assertNotIn("content", lessons[0])
+        self.assertGreaterEqual(lessons[0]["reading_minutes"], 1)
 
     def test_query_fetches_only_requested_page(self):
         """Asosiy maqsad: saralash bazada, LIMIT so'rovning o'zida bo'lsin."""

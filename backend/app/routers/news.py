@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Article, Category
-from ..schemas import ArticleOut, SitemapArticleOut, SubscribeIn
+from ..schemas import ArticleListOut, ArticleOut, SitemapArticleOut, SubscribeIn
 from ..services.education import LESSON_TOPICS
 from ..services.audio import generate_article_audio
 from ..rate_limit import enforce_rate_limit
@@ -31,7 +31,59 @@ def published(db: Session):
     return db.query(Article).filter(Article.status == "published")
 
 
-@router.get("", response_model=list[ArticleOut])
+# Ro'yxatlarda maqola matni kerak emas — undan faqat o'qish vaqti hisoblanardi.
+# Matnni bazadan tortish o'rniga uzunligini olamiz: o'zbekcha darslarda
+# o'rtacha ~8.1 belgi/so'z va ~160 so'z/daqiqa, ya'ni ~1300 belgi/daqiqa.
+# Mavjud 116 ta maqolada tekshirilganda farq 1 daqiqadan oshmadi.
+CHARS_PER_MINUTE = 1300
+
+_LIST_COLUMNS = (
+    Article.id,
+    Article.title,
+    Article.slug,
+    Article.summary,
+    Article.tags,
+    Article.image_url,
+    Article.importance,
+    Article.status,
+    Article.published_at,
+    Article.created_at,
+    func.length(func.coalesce(Article.content, "")).label("content_length"),
+    Category.id.label("category_id"),
+    Category.name.label("category_name"),
+    Category.slug.label("category_slug"),
+)
+
+
+def _list_item(row) -> dict:
+    """Yengil qatorni ArticleListOut ko'rinishiga o'giradi."""
+    return {
+        "id": row.id,
+        "title": row.title,
+        "slug": row.slug,
+        "summary": row.summary or "",
+        "tags": row.tags or [],
+        "image_url": row.image_url,
+        "importance": row.importance,
+        "status": row.status,
+        "reading_minutes": max(
+            1, int((row.content_length or 0) / CHARS_PER_MINUTE + 0.5)
+        ),
+        "category": (
+            {
+                "id": row.category_id,
+                "name": row.category_name,
+                "slug": row.category_slug,
+            }
+            if row.category_id
+            else None
+        ),
+        "published_at": row.published_at,
+        "created_at": row.created_at,
+    }
+
+
+@router.get("", response_model=list[ArticleListOut])
 def latest_lessons(
     db: Session = Depends(get_db),
     kategoriya: str | None = None,
@@ -47,23 +99,18 @@ def latest_lessons(
     query = published(db)
     if kategoriya:
         query = query.join(Category).filter(Category.slug == kategoriya)
+    else:
+        query = query.outerjoin(Category)
+    query = query.with_entities(*_LIST_COLUMNS)
 
     if tartib == "kurs":
         # Kurikulum tartibida: saralash bazada bajariladi, Article.id esa
         # bir xil tartib raqamli darslar uchun barqaror ketma-ketlik beradi.
-        return (
-            query.order_by(_COURSE_ORDER, Article.id)
-            .offset(offset)
-            .limit(limit)
-            .all()
-        )
+        query = query.order_by(_COURSE_ORDER, Article.id)
+    else:
+        query = query.order_by(Article.published_at.desc())
 
-    return (
-        query.order_by(Article.published_at.desc())
-        .offset(offset)
-        .limit(limit)
-        .all()
-    )
+    return [_list_item(row) for row in query.offset(offset).limit(limit).all()]
 
 
 @router.get("/trends")
@@ -79,12 +126,19 @@ def trend_topics(db: Session = Depends(get_db), limit: int = 15):
     return [{"teg": tag, "soni": count} for tag, count in counter.most_common(limit)]
 
 
-@router.get("/search", response_model=list[ArticleOut])
+@router.get("/search", response_model=list[ArticleListOut])
 def search_lessons(q: str, db: Session = Depends(get_db), limit: int = Query(default=20, le=100)):
-    """Sarlavha, xulosa, matn va amaliy ahamiyat bo'yicha takomillashtirilgan qidiruv."""
+    """Sarlavha, xulosa, matn va amaliy ahamiyat bo'yicha takomillashtirilgan qidiruv.
+
+    Qidiruv matn bo'yicha bazada bajariladi, lekin matnning o'zi javobga
+    qaytarilmaydi va bazadan o'qilmaydi.
+    """
     clean_q = q.strip()
     if not clean_q:
         return []
+
+    def _light(query):
+        return query.outerjoin(Category).with_entities(*_LIST_COLUMNS)
 
     bind = db.get_bind()
     # 1. PostgreSQL Full-Text Search (FTS)
@@ -101,14 +155,13 @@ def search_lessons(q: str, db: Session = Depends(get_db), limit: int = Query(def
         )
         ts_query = func.websearch_to_tsquery("simple", clean_q)
         results = (
-            published(db)
-            .filter(ts_vector.op("@@")(ts_query))
+            _light(published(db).filter(ts_vector.op("@@")(ts_query)))
             .order_by(func.ts_rank_cd(ts_vector, ts_query).desc(), Article.published_at.desc())
             .limit(limit)
             .all()
         )
         if results:
-            return results
+            return [_list_item(row) for row in results]
 
     # 2. SQLite / Multi-word Wildcard Fallback
     keywords = [k for k in clean_q.split() if len(k) > 1]
@@ -127,13 +180,13 @@ def search_lessons(q: str, db: Session = Depends(get_db), limit: int = Query(def
             )
         )
 
-    return (
-        published(db)
-        .filter(and_(*filters))
+    rows = (
+        _light(published(db).filter(and_(*filters)))
         .order_by(Article.published_at.desc())
         .limit(limit)
         .all()
     )
+    return [_list_item(row) for row in rows]
 
 
 @router.get("/rss")
@@ -276,18 +329,29 @@ def lesson_detail(slug: str, db: Session = Depends(get_db)):
     return article
 
 
-@router.get("/{slug}/related", response_model=list[ArticleOut])
+@router.get("/{slug}/related", response_model=list[ArticleListOut])
 def related_lessons(slug: str, db: Session = Depends(get_db), limit: int = 4):
     """Mavzuga oid va o'xshash darslarni qaytaradi."""
-    article = published(db).filter(Article.slug == slug).first()
-    if not article:
+    # Manba maqoladan faqat id va kategoriya kerak — matnini o'qimaymiz.
+    current = (
+        published(db)
+        .filter(Article.slug == slug)
+        .with_entities(Article.id, Article.category_id)
+        .first()
+    )
+    if not current:
         return []
+
+    def _light(query):
+        return query.outerjoin(Category).with_entities(*_LIST_COLUMNS)
 
     # 1. Shu kategoriyadagi boshqa maqolalar
     related = (
-        published(db)
-        .filter(Article.id != article.id)
-        .filter(Article.category_id == article.category_id)
+        _light(
+            published(db)
+            .filter(Article.id != current.id)
+            .filter(Article.category_id == current.category_id)
+        )
         .order_by(Article.published_at.desc())
         .limit(limit)
         .all()
@@ -295,17 +359,16 @@ def related_lessons(slug: str, db: Session = Depends(get_db), limit: int = 4):
 
     # 2. Agar kategoriya bo'yicha kam bo'lsa, eng so'nggi boshqa maqolalar bilan to'ldiramiz
     if len(related) < limit:
-        existing_ids = {a.id for a in related} | {article.id}
+        existing_ids = {row.id for row in related} | {current.id}
         fillers = (
-            published(db)
-            .filter(Article.id.not_in(existing_ids))
+            _light(published(db).filter(Article.id.not_in(existing_ids)))
             .order_by(Article.published_at.desc())
             .limit(limit - len(related))
             .all()
         )
         related.extend(fillers)
 
-    return related
+    return [_list_item(row) for row in related]
 
 
 @router.get("/{slug}/audio")

@@ -51,6 +51,28 @@ class ArticleOut(BaseModel):
         return value
 
 
+class ArticleListOut(BaseModel):
+    """Ro'yxatlar uchun yengil maqola yozuvi — maqola matnisiz.
+
+    Ro'yxat ko'rinishlari `content` dan faqat o'qish vaqtini hisoblash uchun
+    foydalanardi, shuning uchun matn o'rniga tayyor `reading_minutes`
+    qaytariladi va matn bazadan umuman o'qilmaydi.
+    """
+
+    id: int
+    title: str
+    slug: str
+    summary: str
+    tags: list
+    image_url: str | None
+    importance: int
+    status: str
+    reading_minutes: int
+    category: CategoryOut | None
+    published_at: datetime | None
+    created_at: datetime
+
+
 class SitemapArticleOut(BaseModel):
     """Sitemap uchun kontent matnisiz yengil maqola yozuvi."""
 

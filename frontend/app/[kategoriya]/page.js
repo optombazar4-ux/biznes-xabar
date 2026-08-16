@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import CourseList from "../../components/CourseList";
 import IdeaList from "../../components/IdeaList";
 import { apiGet } from "../../lib/api";
-import { readingMinutes } from "../../lib/lesson";
+import { articleMinutes } from "../../lib/lesson";
 import { SITE_URL } from "../../lib/site";
 
 async function getCategory(slug) {
@@ -40,7 +40,7 @@ export default async function CoursePage({ params }) {
     title: a.title,
     summary: a.summary,
     tags: a.tags,
-    minutes: readingMinutes(a.content),
+    minutes: articleMinutes(a),
   }));
   const isIdeas = kategoriya === "biznes-goyalari";
 

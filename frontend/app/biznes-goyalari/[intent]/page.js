@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import LessonPage, { generateMetadata as generateLessonMetadata } from "../../[kategoriya]/[slug]/page";
 import IdeaList from "../../../components/IdeaList";
 import { apiGet } from "../../../lib/api";
-import { readingMinutes } from "../../../lib/lesson";
+import { articleMinutes } from "../../../lib/lesson";
 import { SITE_URL } from "../../../lib/site";
 
 const INTENTS = {
@@ -89,7 +89,7 @@ export default async function IntentPage({ params }) {
     title: a.title,
     summary: a.summary,
     tags: a.tags,
-    minutes: readingMinutes(a.content),
+    minutes: articleMinutes(a),
   }));
 
   const breadcrumbLd = {

@@ -6,6 +6,16 @@ export function readingMinutes(content) {
   return Math.max(1, Math.round(words / 160));
 }
 
+// Maqola obyektidan o'qish vaqtini oladi.
+// Ro'yxat endpointlari matnni umuman qaytarmaydi (baza trafigini tejash uchun)
+// va tayyor `reading_minutes` beradi; fallback ma'lumotlarida esa faqat
+// `content` bo'ladi — shuning uchun ikkala holat ham qo'llab-quvvatlanadi.
+export function articleMinutes(article) {
+  const provided = Number(article?.reading_minutes);
+  if (Number.isFinite(provided) && provided > 0) return provided;
+  return readingMinutes(article?.content);
+}
+
 // Bo'lim (kategoriya) bo'yicha darajani belgilaydi.
 const LEVEL_BY_CATEGORY = {
   "biznes-goyalari": "G'oya",
