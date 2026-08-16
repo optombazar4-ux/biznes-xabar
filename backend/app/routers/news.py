@@ -4,7 +4,7 @@ from collections import Counter
 import re
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from sqlalchemy import and_, func, or_
+from sqlalchemy import and_, case, func, or_
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -20,6 +20,11 @@ router = APIRouter(prefix="/api/news", tags=["darslar"])
 
 # Mavzu -> kurikulumdagi tartib raqami (kurs ketma-ketligi uchun)
 _TOPIC_ORDER = {topic: i for i, (_, topic) in enumerate(LESSON_TOPICS)}
+
+# Kurs tartibini bazaning o'zida saralash uchun CASE ifodasi. Ilgari bu
+# saralash Python'da bajarilardi va buning uchun kategoriyadagi BARCHA
+# maqola to'liq matni bilan yuklanardi; endi faqat kerakli sahifa o'qiladi.
+_COURSE_ORDER = case(_TOPIC_ORDER, value=Article.original_title, else_=10_000)
 
 
 def published(db: Session):
@@ -44,10 +49,14 @@ def latest_lessons(
         query = query.join(Category).filter(Category.slug == kategoriya)
 
     if tartib == "kurs":
-        # Kurikulum tartibida: mavzu ro'yxatidagi o'rniga qarab saralaymiz
-        lessons = query.all()
-        lessons.sort(key=lambda a: _TOPIC_ORDER.get(a.original_title, 10_000))
-        return lessons[offset:offset + limit]
+        # Kurikulum tartibida: saralash bazada bajariladi, Article.id esa
+        # bir xil tartib raqamli darslar uchun barqaror ketma-ketlik beradi.
+        return (
+            query.order_by(_COURSE_ORDER, Article.id)
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
 
     return (
         query.order_by(Article.published_at.desc())

@@ -43,7 +43,13 @@ function getFallbackRelated(slug) {
     .slice(0, 4);
 }
 
-export async function apiGet(path, params = {}) {
+// Ilgari har bir so'rov `cache: "no-store"` bilan ketardi, ya'ni har bir
+// tashrifchi uchun baza qaytadan o'qilardi. Pipeline soatiga bir nechta dars
+// qo'shadi, shuning uchun 5 daqiqalik kesh kontentni sezilarli eskirtirmaydi,
+// lekin baza trafigini keskin kamaytiradi.
+const DEFAULT_REVALIDATE = 300;
+
+export async function apiGet(path, params = {}, { revalidate = DEFAULT_REVALIDATE } = {}) {
   const url = new URL(`${API_URL}${path}`);
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null) url.searchParams.set(key, value);
@@ -53,7 +59,10 @@ export async function apiGet(path, params = {}) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4000);
 
-    const res = await fetch(url, { cache: "no-store", signal: controller.signal });
+    const res = await fetch(url, {
+      next: { revalidate },
+      signal: controller.signal,
+    });
     clearTimeout(timeoutId);
 
     if (!res.ok) throw new Error(`API ${res.status}`);
@@ -77,6 +86,18 @@ export async function apiGet(path, params = {}) {
         (a) => a.category?.slug === "biznes-goyalari"
       ).length,
     };
+  }
+  if (path === "/api/news/trends") {
+    const counts = new Map();
+    for (const article of fallbackData.articles || []) {
+      for (const tag of article.tags || []) {
+        counts.set(tag, (counts.get(tag) || 0) + 1);
+      }
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, Number(params.limit) || 15)
+      .map(([teg, soni]) => ({ teg, soni }));
   }
   if (path === "/api/news/sitemap") {
     return (fallbackData.articles || []).map((article) => ({
