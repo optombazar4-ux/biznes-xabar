@@ -11,7 +11,11 @@ node_modules.*/
 out/
 
 # Muhit fayllari va lokal bazalar
+# .env.* — Vercel/Next.js yaratadigan .env.local, .env.production.local kabi
+# fayllar ham git'ga tushmasin (ular ichida amaldagi tokenlar bo'ladi).
 .env
+.env.*
+!.env.example
 *.db
 
 # Google Cloud service-account maxfiy fayllari
