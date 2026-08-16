@@ -111,13 +111,22 @@ async def keep_alive_task():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     validate_production_settings()
-    db = SessionLocal()
+    # Baza yetib bo'lmasa ham API ko'tarilsin — aks holda tashqi baza uzilishi
+    # butun servisni yiqitadi. Holat /health orqali "degraded" deb ko'rinadi.
     try:
-        seed_categories(db)
-        prune_legacy_content(db)
-    finally:
-        db.close()
-    
+        db = SessionLocal()
+        try:
+            seed_categories(db)
+            prune_legacy_content(db)
+        finally:
+            db.close()
+    except Exception as error:
+        logger.warning(
+            "Boshlang'ich seed/prune bajarilmadi (%s). API baribir ishga tushadi.",
+            type(error).__name__,
+        )
+
+
     bg_tasks = []
     if RUN_BACKGROUND_SERVICES:
         bg_tasks.append(asyncio.create_task(pipeline_loop_task()))

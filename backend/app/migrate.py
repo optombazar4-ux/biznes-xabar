@@ -3,6 +3,7 @@
 from alembic import command
 from alembic.config import Config
 from sqlalchemy import inspect, text
+from sqlalchemy.exc import OperationalError
 
 from .database import Base, engine
 from . import models  # noqa: F401 - barcha metadata jadvallarini ro'yxatdan o'tkazadi
@@ -28,8 +29,21 @@ def _schema_contains_expected(inspector, expected_tables) -> bool:
 
 def migrate() -> None:
     config = Config("alembic.ini")
-    inspector = inspect(engine)
-    table_names = set(inspector.get_table_names())
+    try:
+        inspector = inspect(engine)
+        table_names = set(inspector.get_table_names())
+    except OperationalError as error:
+        # Baza vaqtincha yetib bo'lmasa (provayder kvotasi, tarmoq uzilishi),
+        # deployni to'xtatmaymiz. Aks holda `migrate && uvicorn` zanjiri uzilib,
+        # butun servis ishga tushmaydi — tashqi baza uzilishi API'ni ham
+        # o'ldiradi. Endi API ko'tariladi va /health "degraded" deb xabar
+        # beradi; migratsiya baza qaytgach keyingi deployda bajariladi.
+        print(
+            "OGOHLANTIRISH: bazaga ulanib bo'lmadi, migratsiya o'tkazib "
+            f"yuborildi ({type(error).__name__}). Baza tiklangach qayta "
+            "deploy qiling."
+        )
+        return
 
     if _has_alembic_revision(table_names):
         command.upgrade(config, "head")
