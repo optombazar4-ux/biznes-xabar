@@ -1,5 +1,5 @@
 # Render Blueprint — Biznes Darslari backend (FastAPI + pipeline + bot)
-# Ma'lumotlar bazasi: Neon (DATABASE_URL qo'lda kiritiladi).
+# Ma'lumotlar bazasi: Supabase PostgreSQL (DATABASE_URL qo'lda kiritiladi).
 services:
   - type: web
     name: biznes-xabar-backend
@@ -11,7 +11,7 @@ services:
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
-        sync: false          # Neon connection string (Dashboard'da kiritiladi)
+        sync: false          # Supabase pooler connection string
       - key: GEMINI_API_KEY
         sync: false
       - key: AI_PROVIDER
@@ -39,6 +39,10 @@ services:
 
       - key: PIPELINE_INTERVAL
         value: "3600"
+      - key: PIPELINE_STALE_MINUTES
+        value: "120"
+      - key: PIPELINE_ALERT_WEBHOOK_URL
+        sync: false
       - key: RSS_IDEA_ENABLED
         value: "true"
       - key: RSS_IDEA_INTERVAL_DAYS

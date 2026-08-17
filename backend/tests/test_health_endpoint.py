@@ -5,14 +5,17 @@ bazaga faqat bitta arzon so'rov yuborishi kerak. Batafsil kontent
 statistikasi /health/details da qoladi.
 """
 import unittest
+from datetime import timedelta
 from unittest.mock import patch
 
+from fastapi import Response
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 
 from app import main
 from app.database import Base
-from app.models import Article
+from app.models import Article, PipelineRun
+from app.utils import utcnow_naive
 
 
 class HealthEndpointTests(unittest.TestCase):
@@ -72,6 +75,16 @@ class HealthEndpointTests(unittest.TestCase):
         broken.dispose()
 
     def test_details_still_returns_content_stats(self):
+        db = self.Session()
+        db.add(PipelineRun(
+            trigger="unit-test",
+            status="ok",
+            created_count=3,
+            completed_at=utcnow_naive(),
+        ))
+        db.commit()
+        db.close()
+
         with patch.object(main, "SessionLocal", self.Session):
             result = main.health_details()
 
@@ -79,6 +92,54 @@ class HealthEndpointTests(unittest.TestCase):
         self.assertIsNotNone(result["latest_article_at"])
         self.assertIn("curated_total", result["idea_pipeline"])
         self.assertIn("approved_queue", result["idea_pipeline"])
+        self.assertEqual(result["pipeline_persistent"]["created_count"], 3)
+
+    def test_pipeline_monitor_reports_ok_for_recent_success(self):
+        db = self.Session()
+        db.add(PipelineRun(
+            trigger="unit-test",
+            status="ok",
+            created_count=2,
+            completed_at=utcnow_naive(),
+        ))
+        db.commit()
+        db.close()
+
+        response = Response()
+        with patch.object(main, "SessionLocal", self.Session):
+            result = main.pipeline_health(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["pipeline"]["created_count"], 2)
+
+    def test_pipeline_monitor_reports_stale_with_503(self):
+        db = self.Session()
+        db.add(PipelineRun(
+            trigger="unit-test",
+            status="ok",
+            completed_at=utcnow_naive() - timedelta(hours=3),
+        ))
+        db.commit()
+        db.close()
+
+        response = Response()
+        with (
+            patch.object(main, "SessionLocal", self.Session),
+            patch.object(main, "PIPELINE_STALE_MINUTES", 120),
+        ):
+            result = main.pipeline_health(response)
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(result["status"], "stale")
+
+    def test_pipeline_monitor_reports_missing_history_with_503(self):
+        response = Response()
+        with patch.object(main, "SessionLocal", self.Session):
+            result = main.pipeline_health(response)
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(result["status"], "not_started")
 
 
 if __name__ == "__main__":

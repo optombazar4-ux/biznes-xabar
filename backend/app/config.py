@@ -68,6 +68,11 @@ def _bool(name: str, default: str) -> bool:
 # Docker Compose'da ular alohida servis bo'lgani uchun false beriladi.
 RUN_BACKGROUND_SERVICES = _bool("RUN_BACKGROUND_SERVICES", "true")
 
+# Pipeline kuzatuvi: oxirgi muvaffaqiyatli ishga tushish shu chegaradan eski
+# bo'lsa /health/pipeline 503 qaytaradi. Alert webhook ixtiyoriy.
+PIPELINE_STALE_MINUTES = max(30, int(os.getenv("PIPELINE_STALE_MINUTES", "120")))
+PIPELINE_ALERT_WEBHOOK_URL = os.getenv("PIPELINE_ALERT_WEBHOOK_URL", "").strip()
+
 # Kuratsiya qilingan katalog tugagach, xalqaro biznes RSS trendlaridan
 # O'zbekistonga mos yangi g'oyalar har kuni taklif qilinadi.
 RSS_IDEA_ENABLED = _bool("RSS_IDEA_ENABLED", "true")

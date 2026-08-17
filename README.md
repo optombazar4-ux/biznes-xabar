@@ -10,7 +10,7 @@ O‘zbekistonda biznes boshlash va yuritish bo‘yicha bepul amaliy darslar, biz
 - Telegram kanal va bot integratsiyasi
 - Email obuna va dayjest
 - O‘zbekcha audio, RSS, sitemap, PWA va SEO metadata
-- PostgreSQL yoki lokal SQLite
+- Supabase PostgreSQL yoki lokal SQLite
 
 AI yordamida tayyorlangan kontent foydalanuvchiga ochiq ko‘rsatiladi. Soliq, huquq va moliya bo‘yicha muhim qarorlar rasmiy manbalar bilan tekshirilishi kerak.
 
@@ -59,6 +59,7 @@ docker compose --profile bot up -d bot
 - Admin: <http://localhost:3000/admin>
 - API hujjatlari: <http://localhost:8000/docs>
 - Health check: <http://localhost:8000/health> (yengil; batafsil holat — `/health/details`)
+- Pipeline monitor: <http://localhost:8000/health/pipeline> (stale/error holatda HTTP 503)
 
 Backend container ishga tushishidan oldin `python -m app.migrate` orqali Alembic migratsiyasini xavfsiz bajaradi. Pipeline backend sog‘lom bo‘lgandan keyin boshlanadi.
 
@@ -114,6 +115,8 @@ python bot.py
 | `AUTO_TELEGRAM` | `true` | Chop etilgan muhim darslarni yuborish |
 | `AUTO_TELEGRAM_MIN_IMPORTANCE` | `4` | Telegram uchun minimal baho |
 | `RUN_BACKGROUND_SERVICES` | `true` | API jarayonida pipeline/botni yuritish |
+| `PIPELINE_STALE_MINUTES` | `120` | Pipeline monitor uchun eskirish chegarasi |
+| `PIPELINE_ALERT_WEBHOOK_URL` | yo‘q | Pipeline xatosida JSON alert qabul qiluvchi webhook |
 | `FRONTEND_ORIGIN` | `http://localhost:3000` | Kanonik frontend manzili |
 | `CORS_ORIGINS` | `FRONTEND_ORIGIN` | Vergul bilan ajratilgan ruxsatli originlar |
 | `BACKEND_PUBLIC_URL` | `http://localhost:8000` | Media fayllarning tashqi API manzili |
@@ -166,6 +169,14 @@ npm audit --omit=dev
 cd ..
 docker compose config --quiet
 ```
+
+## Zaxira va monitoring
+
+- `/health/pipeline` oxirgi pipeline ishini bazadagi doimiy auditdan tekshiradi.
+- Pipeline xatosida `PIPELINE_ALERT_WEBHOOK_URL` ga maxfiy ma’lumotsiz JSON yuboriladi.
+- Kunlik shifrlangan PostgreSQL backup va restore sinovi
+  `.github/workflows/database-backup.yml` da.
+- Bir martalik sozlash va tiklash yo‘riqnomasi: `docs/backup-restore.md`.
 
 ## Deploy
 

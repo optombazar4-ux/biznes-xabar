@@ -25,7 +25,7 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 logger = logging.getLogger("biznesdarslari")
 
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -35,16 +35,19 @@ from .config import (
     BACKEND_PUBLIC_URL,
     CORS_ORIGINS,
     MEDIA_DIR,
+    PIPELINE_STALE_MINUTES,
     RUN_BACKGROUND_SERVICES,
     validate_production_settings,
 )
 from .database import SessionLocal
-from .models import Article, IdeaProposal, IdeaProposalRun
+from .models import Article, IdeaProposal, IdeaProposalRun, PipelineRun
 from .routers import admin, categories, news
 from .seed import prune_legacy_content, seed_categories
 from .pipeline import run_pipeline
 from .bot.bot import main as run_bot
 from .services.education import IDEA_TOPICS
+from .services.monitoring import send_pipeline_alert
+from .utils import utcnow_naive
 
 PIPELINE_STATE = {
     "status": "not_started",
@@ -63,7 +66,10 @@ async def pipeline_loop_task():
         try:
             logger.info("Running background lessons pipeline...")
             loop = asyncio.get_running_loop()
-            saved = await loop.run_in_executor(None, run_pipeline)
+            saved = await loop.run_in_executor(
+                None,
+                lambda: run_pipeline(trigger="background"),
+            )
             PIPELINE_STATE["status"] = "ok"
             PIPELINE_STATE["last_completed_at"] = datetime.now(timezone.utc).isoformat()
             PIPELINE_STATE["last_saved"] = saved
@@ -72,6 +78,7 @@ async def pipeline_loop_task():
             PIPELINE_STATE["status"] = "error"
             PIPELINE_STATE["last_error_at"] = datetime.now(timezone.utc).isoformat()
             logger.exception("Pipeline loop error: %s", e)
+            await send_pipeline_alert(e)
 
         interval = int(os.getenv("PIPELINE_INTERVAL", "3600"))
         await asyncio.sleep(interval)
@@ -227,11 +234,17 @@ def health_details():
             .order_by(IdeaProposalRun.created_at.desc())
             .first()
         )
+        latest_pipeline_run = (
+            db.query(PipelineRun)
+            .order_by(PipelineRun.started_at.desc(), PipelineRun.id.desc())
+            .first()
+        )
         return {
             "status": "ok",
             "database": "ok",
             "latest_article_at": latest.created_at if latest else None,
             "pipeline": PIPELINE_STATE,
+            "pipeline_persistent": _pipeline_run_payload(latest_pipeline_run),
             "idea_pipeline": {
                 "curated_total": len(IDEA_TOPICS),
                 "curated_published": (
@@ -256,6 +269,57 @@ def health_details():
                     else None
                 ),
             },
+        }
+    finally:
+        db.close()
+
+
+def _pipeline_run_payload(run: PipelineRun | None) -> dict | None:
+    if not run:
+        return None
+    return {
+        "id": run.id,
+        "trigger": run.trigger,
+        "status": run.status,
+        "created_count": run.created_count,
+        "has_error": bool(run.error),
+        "started_at": run.started_at,
+        "completed_at": run.completed_at,
+    }
+
+
+@app.get("/health/pipeline")
+def pipeline_health(response: Response):
+    """Tashqi monitor uchun deploylardan omon qoladigan pipeline holati."""
+    db = SessionLocal()
+    try:
+        latest = (
+            db.query(PipelineRun)
+            .order_by(PipelineRun.started_at.desc(), PipelineRun.id.desc())
+            .first()
+        )
+        if not latest:
+            response.status_code = 503
+            return {"status": "not_started", "pipeline": None}
+
+        reference_time = latest.completed_at or latest.started_at
+        age_minutes = max(
+            0,
+            int((utcnow_naive() - reference_time).total_seconds() // 60),
+        )
+        status = latest.status
+        if status == "ok" and age_minutes > PIPELINE_STALE_MINUTES:
+            status = "stale"
+        elif status == "running" and age_minutes > PIPELINE_STALE_MINUTES:
+            status = "stuck"
+
+        if status != "ok":
+            response.status_code = 503
+        return {
+            "status": status,
+            "age_minutes": age_minutes,
+            "stale_after_minutes": PIPELINE_STALE_MINUTES,
+            "pipeline": _pipeline_run_payload(latest),
         }
     finally:
         db.close()

@@ -36,7 +36,7 @@ from .config import (
     TELEGRAM_BOT_TOKEN,
 )
 from .database import SessionLocal, engine
-from .models import Article, Category, IdeaProposal
+from .models import Article, Category, IdeaProposal, PipelineRun
 from .seed import prune_legacy_content, seed_categories
 from .services.education import (
     IDEA_TOPICS,
@@ -48,10 +48,43 @@ from .services.education import (
 from .services.rss_ideas import create_weekly_proposals
 from .services.telegram import send_to_channel
 from .utils import slugify, utcnow_naive
+from .services.monitoring import sanitize_error
 
 # Har ishga tushganda ko'pi bilan shuncha yangi dars yaratiladi (xarajat/sur'at nazorati)
 LESSON_BATCH_PER_RUN = int(os.getenv("LESSON_BATCH_PER_RUN", "3"))
 PIPELINE_LOCK_ID = 862_024_071
+
+
+def _start_pipeline_run(trigger: str) -> int:
+    audit_db = SessionLocal()
+    try:
+        run = PipelineRun(trigger=(trigger or "background")[:40], status="running")
+        audit_db.add(run)
+        audit_db.commit()
+        audit_db.refresh(run)
+        return run.id
+    finally:
+        audit_db.close()
+
+
+def _finish_pipeline_run(
+    run_id: int,
+    status: str,
+    created_count: int,
+    error: BaseException | str = "",
+) -> None:
+    audit_db = SessionLocal()
+    try:
+        run = audit_db.get(PipelineRun, run_id)
+        if not run:
+            return
+        run.status = status
+        run.created_count = created_count
+        run.error = sanitize_error(error) if error else ""
+        run.completed_at = utcnow_naive()
+        audit_db.commit()
+    finally:
+        audit_db.close()
 
 
 def _should_auto_publish(importance: int) -> bool:
@@ -256,7 +289,7 @@ def _send_to_telegram_if_enabled(db, article: Article) -> None:
 
 
 
-def run_pipeline(per_feed: int = 0) -> int:
+def run_pipeline(per_feed: int = 0, trigger: str = "background") -> int:
     """Kurikulum yoki RSS-AI navbatidan yangi darslar yaratadi.
 
     (per_feed argumenti eski chaqiruvlar bilan moslik uchun qoldirilgan, ishlatilmaydi.)
@@ -266,10 +299,13 @@ def run_pipeline(per_feed: int = 0) -> int:
         lock_connection.close()
         print("⏭ Boshqa instance pipeline'ni ishlatyapti — bu safar o'tkazildi.")
         return 0
-    db = SessionLocal()
+    run_id = None
+    db = None
     created = 0
     generation_errors = 0
     try:
+        run_id = _start_pipeline_run(trigger)
+        db = SessionLocal()
         seed_categories(db)
         prune_legacy_content(db)
         categories = {c.slug: c for c in db.query(Category).all()}
@@ -328,6 +364,7 @@ def run_pipeline(per_feed: int = 0) -> int:
                         "Barcha validatsiyalangan AI g'oyalari generatsiyada xatoga uchradi"
                     )
                 print(f"\n✅ {created} ta yangi RSS-trend g'oyasi yaratildi.")
+                _finish_pipeline_run(run_id, "ok", created)
                 return created
 
         # Kunlik taklif navbati bo'sh bo'lsa, umumiy biznes kurikulumi davom etadi.
@@ -341,6 +378,7 @@ def run_pipeline(per_feed: int = 0) -> int:
 
         if not batch:
             print("✅ Hozircha yangi mavzu yoki tasdiqlangan RSS g'oya yo'q.")
+            _finish_pipeline_run(run_id, "ok", 0)
             return 0
 
         for section_slug, topic in batch:
@@ -356,9 +394,17 @@ def run_pipeline(per_feed: int = 0) -> int:
             raise RuntimeError("Barcha yangi darslar AI generatsiyasida xatoga uchradi")
 
         print(f"\n✅ {created} ta yangi dars yaratildi.")
+        _finish_pipeline_run(run_id, "ok", created)
         return created
+    except Exception as error:
+        if db is not None:
+            db.rollback()
+        if run_id is not None:
+            _finish_pipeline_run(run_id, "error", created, error)
+        raise
     finally:
-        db.close()
+        if db is not None:
+            db.close()
         _release_pipeline_lock(lock_connection)
 
 

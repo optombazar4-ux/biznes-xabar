@@ -98,3 +98,17 @@ class IdeaProposalRun(Base):
     status: Mapped[str] = mapped_column(String(20), default="running", index=True)
     error: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow_naive)
+
+
+class PipelineRun(Base):
+    """Asosiy kontent pipeline'ining deploylardan omon qoladigan auditi."""
+
+    __tablename__ = "pipeline_runs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    trigger: Mapped[str] = mapped_column(String(40), default="background", index=True)
+    status: Mapped[str] = mapped_column(String(20), default="running", index=True)
+    created_count: Mapped[int] = mapped_column(Integer, default=0)
+    error: Mapped[str] = mapped_column(Text, default="")
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow_naive, index=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
