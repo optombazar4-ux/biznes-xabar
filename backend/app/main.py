@@ -18,6 +18,10 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)-7s | %(name)s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+# httpx INFO yozuvlari so'ralgan URL'ni to'liq chiqaradi. Telegram Bot API
+# tokeni URL yo'lida bo'lgani uchun uni production loglariga sizdirmaymiz.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 logger = logging.getLogger("biznesdarslari")
 
 
