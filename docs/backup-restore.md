@@ -2,7 +2,7 @@
 
 `.github/workflows/database-backup.yml` har kuni PostgreSQL bazaning loyiha
 ishlatadigan `public` sxemasini custom formatda eksport qiladi, alohida
-PostgreSQL 16 bazasiga tiklab tekshiradi,
+PostgreSQL 17 bazasiga tiklab tekshiradi,
 so‘ng faqat AES-256 bilan shifrlangan arxivni GitHub Actions artifact sifatida
 30 kun saqlaydi.
 
