@@ -1,13 +1,16 @@
 """Ixtiyoriy: rasm topilmagan maqolalar uchun Gemini bilan rasm generatsiya.
 
 .env orqali yoqiladi: IMAGE_GENERATION=true (standart: o'chiq — har rasm pullik).
-Yaratilgan rasm MEDIA_DIR ga saqlanadi va backend /media/... orqali tarqatadi.
+Production'da WebP rasm Supabase Storage'ga, lokalda MEDIA_DIR ga saqlanadi.
 """
 
 import base64
+from io import BytesIO
 from pathlib import Path
+import re
 
 import httpx
+from PIL import Image
 
 from ..config import (
     BACKEND_PUBLIC_URL,
@@ -15,6 +18,18 @@ from ..config import (
     GEMINI_IMAGE_MODEL,
     MEDIA_DIR,
 )
+from .storage import upload_bytes
+
+
+def _compress_webp(image_bytes: bytes) -> bytes:
+    """Rasmni bepul Storage va tez sahifa uchun o'lchamlangan WebP qiladi."""
+    with Image.open(BytesIO(image_bytes)) as image:
+        image.thumbnail((1600, 1600), Image.Resampling.LANCZOS)
+        if image.mode not in {"RGB", "RGBA"}:
+            image = image.convert("RGB")
+        output = BytesIO()
+        image.save(output, format="WEBP", quality=82, method=6)
+        return output.getvalue()
 
 
 def generate_image(title: str, slug: str) -> str | None:
@@ -49,13 +64,24 @@ def generate_image(title: str, slug: str) -> str | None:
         if not image_part:
             return None
 
+        raw_image = base64.b64decode(image_part["data"])
+        webp_image = _compress_webp(raw_image)
+        safe_slug = re.sub(r"[^a-zA-Z0-9_-]", "_", slug or "cover")
+        filename = f"{safe_slug}.webp"
+
+        storage_url = upload_bytes(
+            f"images/{filename}",
+            webp_image,
+            "image/webp",
+        )
+        if storage_url:
+            return storage_url
+
         media_dir = Path(MEDIA_DIR)
         media_dir.mkdir(parents=True, exist_ok=True)
-        extension = "png" if "png" in image_part.get("mimeType", "image/png") else "jpg"
-        file_path = media_dir / f"{slug}.{extension}"
-        file_path.write_bytes(base64.b64decode(image_part["data"]))
-
-        return f"{BACKEND_PUBLIC_URL}/media/{file_path.name}"
+        file_path = media_dir / filename
+        file_path.write_bytes(webp_image)
+        return f"{BACKEND_PUBLIC_URL}/media/{filename}"
     except Exception as error:
         print(f"   ✗ Rasm generatsiya xatosi: {error}")
         return None

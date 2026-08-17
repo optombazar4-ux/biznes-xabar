@@ -43,6 +43,14 @@ services:
         value: "120"
       - key: PIPELINE_ALERT_WEBHOOK_URL
         sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: "media"
+      - key: STORAGE_MAX_FILE_MB
+        value: "6"
       - key: RSS_IDEA_ENABLED
         value: "true"
       - key: RSS_IDEA_INTERVAL_DAYS

@@ -20,12 +20,24 @@ if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="backslashreplace")
 
 from ..config import MEDIA_DIR, BACKEND_PUBLIC_URL, GEMINI_API_KEY, GEMINI_TTS_MODEL
+from .storage import existing_public_object_url, upload_file
 
 AUDIO_DIR = Path(MEDIA_DIR) / "audio"
 AUDIO_DIR.mkdir(parents=True, exist_ok=True)
 
 # Minimal fallback audio
 SILENT_MP3_FRAME = b"\xff\xf3\x18\xc4\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" * 80
+
+
+def _finalize_audio(file_path: Path, object_path: str, content_type: str) -> str:
+    storage_url = upload_file(object_path, file_path, content_type)
+    if storage_url:
+        try:
+            file_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        return storage_url
+    return f"{BACKEND_PUBLIC_URL}/media/audio/{file_path.name}"
 
 
 async def _async_edge_tts_save(text: str, dest_path: str):
@@ -90,11 +102,19 @@ def generate_article_audio(slug: str, title: str, summary: str, practical_note: 
     mp3_filepath = AUDIO_DIR / mp3_filename
     wav_filepath = AUDIO_DIR / wav_filename
 
+    # Production'da deploydan oldingi audio Supabase CDN'da mavjud bo'lishi mumkin.
+    remote_mp3 = existing_public_object_url(f"audio/{mp3_filename}")
+    if remote_mp3:
+        return remote_mp3
+    remote_wav = existing_public_object_url(f"audio/{wav_filename}")
+    if remote_wav:
+        return remote_wav
+
     # 1. Keshlangan fayl mavjud bo'lsa (haqiqatda diskda bor bo'lganini qaytaramiz)
     if mp3_filepath.exists() and mp3_filepath.stat().st_size > 500:
-        return f"{BACKEND_PUBLIC_URL}/media/audio/{mp3_filename}"
+        return _finalize_audio(mp3_filepath, f"audio/{mp3_filename}", "audio/mpeg")
     if wav_filepath.exists() and wav_filepath.stat().st_size > 500:
-        return f"{BACKEND_PUBLIC_URL}/media/audio/{wav_filename}"
+        return _finalize_audio(wav_filepath, f"audio/{wav_filename}", "audio/wav")
 
     # 2. Ovozlantiriladigan toza matn
     raw_text = f"{title or ''}. {summary or ''}"
@@ -119,14 +139,14 @@ def generate_article_audio(slug: str, title: str, summary: str, practical_note: 
 
         if mp3_filepath.exists() and mp3_filepath.stat().st_size > 500:
             print(f"✅ EdgeTTS (uz-UZ-MadinaNeural) audio yaratildi: {mp3_filename}")
-            return f"{BACKEND_PUBLIC_URL}/media/audio/{mp3_filename}"
+            return _finalize_audio(mp3_filepath, f"audio/{mp3_filename}", "audio/mpeg")
     except Exception as err:
         print(f"⚠️ EdgeTTS xatosi: {err}")
 
     # 4. Gemini GenAI SDK Audio
     if GEMINI_API_KEY:
         if _generate_gemini_audio(clean_text, wav_filepath):
-            return f"{BACKEND_PUBLIC_URL}/media/audio/{wav_filename}"
+            return _finalize_audio(wav_filepath, f"audio/{wav_filename}", "audio/wav")
 
     # 5. gTTS Fallback (o'zbek tili)
     try:
@@ -134,7 +154,7 @@ def generate_article_audio(slug: str, title: str, summary: str, practical_note: 
         tts = gTTS(text=clean_text[:500], lang="uz")
         tts.save(str(mp3_filepath))
         if mp3_filepath.exists() and mp3_filepath.stat().st_size > 500:
-            return f"{BACKEND_PUBLIC_URL}/media/audio/{mp3_filename}"
+            return _finalize_audio(mp3_filepath, f"audio/{mp3_filename}", "audio/mpeg")
     except Exception as err:
         print(f"⚠️ gTTS xatosi: {err}")
 
@@ -142,7 +162,7 @@ def generate_article_audio(slug: str, title: str, summary: str, practical_note: 
     try:
         with open(mp3_filepath, "wb") as f:
             f.write(SILENT_MP3_FRAME)
-        return f"{BACKEND_PUBLIC_URL}/media/audio/{mp3_filename}"
+        return _finalize_audio(mp3_filepath, f"audio/{mp3_filename}", "audio/mpeg")
     except Exception as err:
         print(f"❌ Fallback audio xatosi: {err}")
         return f"{BACKEND_PUBLIC_URL}/media/audio/{mp3_filename}"

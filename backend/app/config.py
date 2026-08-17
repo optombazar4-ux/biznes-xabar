@@ -105,6 +105,16 @@ GEMINI_TTS_MODEL = os.getenv("GEMINI_TTS_MODEL", "gemini-3.1-flash-tts-preview")
 MEDIA_DIR = os.getenv("MEDIA_DIR", "./media")
 BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL", "http://localhost:8000")
 
+# Production media storage. Kalit faqat backend'da saqlanadi va brauzerga
+# yuborilmaydi. Sozlanmasa lokal MEDIA_DIR fallback ishlaydi.
+SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
+SUPABASE_SECRET_KEY = (
+    os.getenv("SUPABASE_SECRET_KEY", "").strip()
+    or os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+)
+SUPABASE_STORAGE_BUCKET = os.getenv("SUPABASE_STORAGE_BUCKET", "media").strip()
+STORAGE_MAX_FILE_MB = max(1, min(50, int(os.getenv("STORAGE_MAX_FILE_MB", "6"))))
+
 # Frontend manzili (CORS uchun)
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", FRONTEND_ORIGIN)

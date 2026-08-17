@@ -117,6 +117,10 @@ python bot.py
 | `RUN_BACKGROUND_SERVICES` | `true` | API jarayonida pipeline/botni yuritish |
 | `PIPELINE_STALE_MINUTES` | `120` | Pipeline monitor uchun eskirish chegarasi |
 | `PIPELINE_ALERT_WEBHOOK_URL` | yo‘q | Pipeline xatosida JSON alert qabul qiluvchi webhook |
+| `SUPABASE_URL` | yo‘q | Supabase loyiha URL’i; production media Storage uchun |
+| `SUPABASE_SECRET_KEY` | yo‘q | Faqat backend’da saqlanadigan Storage server kaliti |
+| `SUPABASE_STORAGE_BUCKET` | `media` | Rasm va audio uchun public bucket |
+| `STORAGE_MAX_FILE_MB` | `6` | Standard upload uchun fayl hajmi chegarasi |
 | `FRONTEND_ORIGIN` | `http://localhost:3000` | Kanonik frontend manzili |
 | `CORS_ORIGINS` | `FRONTEND_ORIGIN` | Vergul bilan ajratilgan ruxsatli originlar |
 | `BACKEND_PUBLIC_URL` | `http://localhost:8000` | Media fayllarning tashqi API manzili |
@@ -174,6 +178,8 @@ docker compose config --quiet
 
 - `/health/pipeline` oxirgi pipeline ishini bazadagi doimiy auditdan tekshiradi.
 - Pipeline xatosida `PIPELINE_ALERT_WEBHOOK_URL` ga maxfiy ma’lumotsiz JSON yuboriladi.
+- Production rasmlar WebP formatida, audio fayllar esa `media` Supabase Storage
+  bucket’ida saqlanadi; Storage sozlanmasa lokal `/media` fallback ishlaydi.
 - Kunlik shifrlangan PostgreSQL backup va restore sinovi
   `.github/workflows/database-backup.yml` da.
 - Bir martalik sozlash va tiklash yo‘riqnomasi: `docs/backup-restore.md`.
