@@ -39,42 +39,46 @@ jobs:
           test -n "$DATABASE_URL" || { echo "BACKUP_DATABASE_URL is missing"; exit 1; }
           test -n "$BACKUP_ENCRYPTION_PASSWORD" || { echo "BACKUP_ENCRYPTION_PASSWORD is missing"; exit 1; }
 
-      - name: Install PostgreSQL client
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client-17
-
       - name: Create PostgreSQL custom-format backup
         shell: bash
         run: |
           mkdir -p backup
-          pg_dump "$DATABASE_URL" \
-            --format=custom \
-            --schema=public \
-            --no-owner \
-            --no-acl \
-            --file="backup/biznes-xabar.dump"
-          pg_restore --list "backup/biznes-xabar.dump" > "backup/restore-list.txt"
+          docker run --rm \
+            --env DATABASE_URL \
+            --volume "$PWD/backup:/backup" \
+            postgres:17 \
+            sh -c 'pg_dump "$DATABASE_URL" \
+              --format=custom \
+              --schema=public \
+              --no-owner \
+              --no-acl \
+              --file=/backup/biznes-xabar.dump && \
+              pg_restore --list /backup/biznes-xabar.dump > /backup/restore-list.txt'
 
       - name: Restore into an isolated database
         shell: bash
         run: |
-          pg_restore \
-            --host=127.0.0.1 \
-            --port=5432 \
-            --username=restore_user \
-            --dbname=restore_check \
-            --no-owner \
-            --no-acl \
-            --exit-on-error \
-            "backup/biznes-xabar.dump"
-          psql \
-            --host=127.0.0.1 \
-            --port=5432 \
-            --username=restore_user \
-            --dbname=restore_check \
-            --tuples-only \
-            --command="SELECT COUNT(*) FROM articles;"
+          docker run --rm \
+            --network host \
+            --env PGPASSWORD \
+            --volume "$PWD/backup:/backup" \
+            postgres:17 \
+            sh -c 'pg_restore \
+              --host=127.0.0.1 \
+              --port=5432 \
+              --username=restore_user \
+              --dbname=restore_check \
+              --no-owner \
+              --no-acl \
+              --exit-on-error \
+              /backup/biznes-xabar.dump && \
+              psql \
+              --host=127.0.0.1 \
+              --port=5432 \
+              --username=restore_user \
+              --dbname=restore_check \
+              --tuples-only \
+              --command="SELECT COUNT(*) FROM articles;"'
 
       - name: Encrypt backup and create checksum
         shell: bash
