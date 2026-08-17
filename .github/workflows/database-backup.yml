@@ -63,7 +63,13 @@ jobs:
             --env PGPASSWORD \
             --volume "$PWD/backup:/backup" \
             postgres:17 \
-            sh -c 'pg_restore \
+            sh -c 'psql \
+              --host=127.0.0.1 \
+              --port=5432 \
+              --username=restore_user \
+              --dbname=restore_check \
+              --command="DROP SCHEMA public CASCADE;" && \
+              pg_restore \
               --host=127.0.0.1 \
               --port=5432 \
               --username=restore_user \
