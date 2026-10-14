@@ -39,10 +39,12 @@ services:
       VERTEX_GEMINI_MODEL: ${VERTEX_GEMINI_MODEL:-gemini-2.5-flash-lite}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ADMIN_TOKEN: ${ADMIN_TOKEN:?ADMIN_TOKEN .env faylida sozlanishi shart}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_CHANNEL_ID: ${TELEGRAM_CHANNEL_ID:-}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      TRUST_PROXY_HEADERS: ${TRUST_PROXY_HEADERS:-false}
       MEDIA_DIR: /app/media
       BACKEND_PUBLIC_URL: ${BACKEND_PUBLIC_URL:-http://localhost:8000}
       RUN_BACKGROUND_SERVICES: "false"
@@ -59,7 +61,7 @@ services:
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready', timeout=5)",
         ]
       interval: 30s
       timeout: 10s
@@ -87,9 +89,9 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_CHANNEL_ID: ${TELEGRAM_CHANNEL_ID:-}
-      AUTO_PUBLISH: ${AUTO_PUBLISH:-true}
-      AUTO_PUBLISH_MIN_IMPORTANCE: ${AUTO_PUBLISH_MIN_IMPORTANCE:-1}
-      AUTO_TELEGRAM: ${AUTO_TELEGRAM:-true}
+      AUTO_PUBLISH: ${AUTO_PUBLISH:-false}
+      AUTO_PUBLISH_MIN_IMPORTANCE: ${AUTO_PUBLISH_MIN_IMPORTANCE:-4}
+      AUTO_TELEGRAM: ${AUTO_TELEGRAM:-false}
       AUTO_TELEGRAM_MIN_IMPORTANCE: ${AUTO_TELEGRAM_MIN_IMPORTANCE:-4}
       PIPELINE_INTERVAL: ${PIPELINE_INTERVAL:-3600}
       IMAGE_GENERATION: ${IMAGE_GENERATION:-false}

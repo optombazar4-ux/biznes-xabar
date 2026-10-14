@@ -52,7 +52,7 @@ class AdminSecurityTests(unittest.TestCase):
     def test_unconfigured_admin_rejects_even_bearer_token(self):
         with patch("app.deps.admin_is_configured", return_value=False):
             with self.assertRaises(HTTPException) as raised:
-                require_admin(authorization="Bearer forged", x_admin_token="")
+                require_admin(authorization="Bearer forged")
         self.assertEqual(raised.exception.status_code, 503)
 
     def test_article_importance_is_bounded(self):

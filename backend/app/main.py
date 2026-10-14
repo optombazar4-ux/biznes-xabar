@@ -104,7 +104,7 @@ async def keep_alive_task():
     await asyncio.sleep(10)
     import httpx
 
-    url = f"{BACKEND_PUBLIC_URL.rstrip('/')}/health"
+    url = f"{BACKEND_PUBLIC_URL.rstrip('/')}/health/live"
     if not url.startswith("http"):
         logger.warning("BACKEND_PUBLIC_URL noto'g'ri — keep-alive ishga tushmadi.")
         return
@@ -189,6 +189,12 @@ def root():
     return {"loyiha": "Biznes Darslari", "hujjatlar": "/docs"}
 
 
+@app.get("/health/live")
+def liveness():
+    """Jarayon tirikligini tekshiradi; tashqi bog'liqliklarni so'ramaydi."""
+    return {"status": "ok"}
+
+
 @app.get("/health")
 def health():
     """Yengil sog'liq tekshiruvi — Render va keep-alive buni muntazam chaqiradi.
@@ -217,6 +223,21 @@ def health():
         "database": database,
         "pipeline": PIPELINE_STATE,
     }
+
+
+@app.get("/health/ready")
+def readiness(response: Response):
+    """Trafik qabul qilishga tayyorlik: asosiy baza mavjud bo'lishi shart."""
+    db = SessionLocal()
+    try:
+        db.execute(text("SELECT 1"))
+    except Exception as error:
+        logger.warning("Readiness DB xatosi: %s", type(error).__name__)
+        response.status_code = 503
+        return {"status": "not_ready", "database": "error"}
+    finally:
+        db.close()
+    return {"status": "ready", "database": "ok"}
 
 
 @app.get("/health/details")

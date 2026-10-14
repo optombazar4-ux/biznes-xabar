@@ -9,7 +9,7 @@ export default function PrivacyPage() {
   return (
     <div className="mx-auto max-w-3xl py-10">
       <h1 className="mb-2 text-3xl font-bold">Maxfiylik siyosati</h1>
-      <p className="mb-8 text-sm text-slate-500">Oxirgi yangilanish: 2026-yil 7-iyul</p>
+      <p className="mb-8 text-sm text-slate-500">Oxirgi yangilanish: 2026-yil 2-oktabr</p>
 
       <div className="space-y-5 leading-relaxed text-slate-300">
         <h2 className="text-xl font-bold text-white">Qanday ma&apos;lumot to&apos;playmiz</h2>
@@ -19,6 +19,11 @@ export default function PrivacyPage() {
           texnik vositalar ishlatiladi:
         </p>
         <ul className="list-disc space-y-2 pl-6">
+          <li>
+            <strong className="text-white">Email obunasi</strong> — siz kiritgan email manzili
+            faqat tasdiqlash havolasini bosganingizdan keyin faollashadi. Dayjestdagi
+            “Obunani bekor qilish” havolasi orqali istalgan payt obunani to&apos;xtatishingiz mumkin.
+          </li>
           <li>
             <strong className="text-white">Mahalliy xotira (localStorage)</strong> — obuna
             taklifi oynasini yopganingizni eslab qolish uchun. Bu ma&apos;lumot faqat sizning

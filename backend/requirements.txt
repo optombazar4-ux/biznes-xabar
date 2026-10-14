@@ -7,6 +7,9 @@ google-auth[requests]>=2.40,<3
 # anthropic>=0.40
 python-dotenv>=1.0
 psycopg2-binary>=2.9 ; python_version >= "3.9"
+# DATABASE_URL `postgresql+psycopg://` ko'rinishida bo'lsa SQLAlchemy 3-avlod
+# drayverini tanlaydi; psycopg2-binary bunday URL uchun yetarli emas.
+psycopg[binary]>=3.2
 aiogram>=3.13
 alembic>=1.13
 pyjwt>=2.9

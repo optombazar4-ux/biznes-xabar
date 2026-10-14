@@ -81,7 +81,7 @@ export default function SubscribePopup() {
           <p className="font-bold">Yangi darslardan xabardor bo&apos;ling!</p>
         </div>
         <p className="mb-3 text-xs leading-relaxed text-slate-400">
-          Haftalik eng muhim biznes darslari va tayyor g&apos;oyalarni emailingizga oling:
+          Haftalik eng muhim biznes darslari va tayyor g&apos;oyalarni emailingizga oling. Obuna faqat emailingizdagi tasdiqlash havolasini bosganingizdan keyin faollashadi:
         </p>
 
         <form onSubmit={handleSubscribe} className="mb-3 flex flex-col gap-2">
@@ -98,7 +98,7 @@ export default function SubscribePopup() {
             disabled={loading}
             className="rounded-lg bg-amber-500 py-2 text-xs font-bold text-slate-950 hover:bg-amber-400"
           >
-            {loading ? "Yuborilmoqda..." : " Obuna bo'lish"}
+            {loading ? "Yuborilmoqda..." : "Tasdiqlash xatini yuborish"}
           </button>
         </form>
 

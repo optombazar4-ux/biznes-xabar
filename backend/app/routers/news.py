@@ -1,18 +1,25 @@
 """Ommaviy darslar API — faqat chop etilgan darslar."""
 
 from collections import Counter
+from datetime import timedelta
 import re
+import secrets
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse
 from sqlalchemy import and_, case, func, or_
 from sqlalchemy.orm import Session
 
+from ..config import BACKEND_PUBLIC_URL, SUBSCRIPTION_CONFIRMATION_TTL_HOURS
 from ..database import get_db
-from ..models import Article, Category
+from ..models import Article, Category, Subscription
 from ..schemas import ArticleListOut, ArticleOut, SitemapArticleOut, SubscribeIn
 from ..services.education import LESSON_TOPICS
 from ..services.audio import generate_article_audio
+from ..services.email import send_subscription_confirmation_email
 from ..rate_limit import enforce_rate_limit
+from ..utils import utcnow_naive
 
 
 
@@ -29,6 +36,133 @@ _COURSE_ORDER = case(_TOPIC_ORDER, value=Article.original_title, else_=10_000)
 
 def published(db: Session):
     return db.query(Article).filter(Article.status == "published")
+
+
+def _subscription_token() -> str:
+    return secrets.token_urlsafe(32)
+
+
+def _subscription_url(path: str, token: str) -> str:
+    base = BACKEND_PUBLIC_URL.rstrip("/")
+    return f"{base}{path}?{urlencode({'token': token})}"
+
+
+def _subscription_page(title: str, message: str, status_code: int = 200) -> HTMLResponse:
+    return HTMLResponse(
+        status_code=status_code,
+        content=f"""<!doctype html><html lang="uz"><head><meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1"><title>{title}</title></head>
+        <body style="font-family:Arial,sans-serif;background:#020617;color:#f8fafc;padding:32px">
+        <main style="max-width:560px;margin:auto;padding:28px;border:1px solid #334155;border-radius:12px;background:#0f172a">
+        <h1 style="color:#f59e0b">{title}</h1><p>{message}</p></main></body></html>""",
+    )
+
+
+@router.post("/subscribe")
+def subscribe_newsletter(data: SubscribeIn, request: Request, db: Session = Depends(get_db)):
+    """Email manzilini tasdiqlash xati bilan ro'yxatga oladi."""
+    enforce_rate_limit(request, "newsletter-subscribe", limit=5, window_seconds=60 * 60, db=db)
+    existing = db.query(Subscription).filter(Subscription.email == data.email).first()
+
+    # Faol obunachi uchun ham aynan bir xil javob qaytaramiz: aks holda
+    # endpoint email manzillarini aniqlashga xizmat qilib qoladi.
+    if existing and existing.is_active and not existing.confirmation_token:
+        return {
+            "ok": True,
+            "xabar": "Agar bu email manzil ro'yxatga olinishi kerak bo'lsa, keyingi qadamlar emailingizga yuboriladi.",
+        }
+
+    confirmation_token = _subscription_token()
+    unsubscribe_token = _subscription_token()
+    confirmation_expires_at = utcnow_naive() + timedelta(
+        hours=SUBSCRIPTION_CONFIRMATION_TTL_HOURS
+    )
+    if existing:
+        existing.is_active = False
+        existing.confirmation_token = confirmation_token
+        existing.confirmation_expires_at = confirmation_expires_at
+        existing.unsubscribe_token = unsubscribe_token
+        existing.confirmed_at = None
+        subscription = existing
+    else:
+        subscription = Subscription(
+            email=data.email,
+            is_active=False,
+            confirmation_token=confirmation_token,
+            confirmation_expires_at=confirmation_expires_at,
+            unsubscribe_token=unsubscribe_token,
+        )
+        db.add(subscription)
+    db.commit()
+
+    confirmation_url = _subscription_url(
+        "/api/news/subscription/confirm", confirmation_token
+    )
+    send_subscription_confirmation_email(data.email, confirmation_url)
+
+    return {
+        "ok": True,
+        "xabar": "Agar bu email manzil ro'yxatga olinishi kerak bo'lsa, keyingi qadamlar emailingizga yuboriladi.",
+    }
+
+
+@router.get("/subscription/confirm", response_class=HTMLResponse)
+def confirm_subscription(token: str = Query(min_length=20, max_length=128), db: Session = Depends(get_db)):
+    subscription = (
+        db.query(Subscription)
+        .filter(Subscription.confirmation_token == token)
+        .first()
+    )
+    if not subscription:
+        return _subscription_page(
+            "Havola yaroqsiz",
+            "Bu tasdiqlash havolasi topilmadi yoki avval ishlatilgan.",
+            status_code=404,
+        )
+    if (
+        subscription.confirmation_expires_at
+        and subscription.confirmation_expires_at <= utcnow_naive()
+    ):
+        subscription.confirmation_token = None
+        subscription.confirmation_expires_at = None
+        db.commit()
+        return _subscription_page(
+            "Havola muddati tugagan",
+            "Yangi tasdiqlash havolasini olish uchun saytda qayta obuna bo'ling.",
+            status_code=410,
+        )
+    subscription.is_active = True
+    subscription.confirmed_at = utcnow_naive()
+    subscription.confirmation_token = None
+    subscription.confirmation_expires_at = None
+    db.commit()
+    return _subscription_page(
+        "Obuna tasdiqlandi",
+        "Rahmat! Endi sizga faqat eng muhim biznes darslari yuboriladi.",
+    )
+
+
+@router.get("/subscription/unsubscribe", response_class=HTMLResponse)
+def unsubscribe_newsletter(token: str = Query(min_length=20, max_length=128), db: Session = Depends(get_db)):
+    subscription = (
+        db.query(Subscription)
+        .filter(Subscription.unsubscribe_token == token)
+        .first()
+    )
+    if not subscription:
+        return _subscription_page(
+            "Havola yaroqsiz",
+            "Bu obunani bekor qilish havolasi topilmadi.",
+            status_code=404,
+        )
+    subscription.is_active = False
+    subscription.confirmation_token = None
+    subscription.confirmation_expires_at = None
+    db.commit()
+    return _subscription_page(
+        "Obuna bekor qilindi",
+        "Sizga boshqa dayjest xatlari yuborilmaydi. Istasangiz, saytdan keyinroq qayta obuna bo'lishingiz mumkin.",
+    )
 
 
 # Ro'yxatlarda maqola matni kerak emas — undan faqat o'qish vaqti hisoblanardi.
@@ -374,7 +508,7 @@ def related_lessons(slug: str, db: Session = Depends(get_db), limit: int = 4):
 @router.get("/{slug}/audio")
 def lesson_audio(slug: str, request: Request, db: Session = Depends(get_db)):
     """Dars matnidan O'zbekcha MP3 audio yaratadi va kesh URL qaytaradi."""
-    enforce_rate_limit(request, "lesson-audio", limit=10, window_seconds=60 * 60)
+    enforce_rate_limit(request, "lesson-audio", limit=10, window_seconds=60 * 60, db=db)
     article = published(db).filter(Article.slug == slug).first()
     if not article:
         raise HTTPException(status_code=404, detail="Dars topilmadi")
@@ -389,23 +523,3 @@ def lesson_audio(slug: str, request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Audio generatsiyasida xatolik")
 
     return {"ok": True, "audio_url": audio_url}
-
-
-
-
-@router.post("/subscribe")
-def subscribe_newsletter(data: SubscribeIn, request: Request, db: Session = Depends(get_db)):
-    """Email obunasini ro'yxatdan o'tkazish."""
-    enforce_rate_limit(request, "newsletter-subscribe", limit=5, window_seconds=60 * 60)
-    from ..models import Subscription
-    existing = db.query(Subscription).filter(Subscription.email == data.email).first()
-    if existing:
-        if not existing.is_active:
-            existing.is_active = True
-            db.commit()
-        return {"ok": True, "xabar": "Siz allaqachon obuna bo'lgansiz!"}
-
-    sub = Subscription(email=data.email, is_active=True)
-    db.add(sub)
-    db.commit()
-    return {"ok": True, "xabar": "Rahmat! Email obunangiz muvaffaqiyatli qabul qilindi."}

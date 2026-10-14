@@ -4,7 +4,7 @@ import secrets
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
-from ..config import ADMIN_TOKEN, JWT_EXPIRE_MINUTES, admin_is_configured
+from ..config import BACKEND_PUBLIC_URL, ADMIN_TOKEN, JWT_EXPIRE_MINUTES, admin_is_configured
 from ..database import get_db
 from ..deps import require_admin
 from ..models import Article, Category, IdeaProposal, Subscription
@@ -22,9 +22,9 @@ logger = logging.getLogger(__name__)
 
 
 @router.post("/login")
-def admin_login(request: Request, payload: AdminLoginIn):
+def admin_login(request: Request, payload: AdminLoginIn, db: Session = Depends(get_db)):
     """Admin token/parol bilan kirib JWT access_token olish."""
-    enforce_rate_limit(request, "admin-login", limit=5, window_seconds=15 * 60)
+    enforce_rate_limit(request, "admin-login", limit=5, window_seconds=15 * 60, db=db)
     token = payload.token
     if not admin_is_configured():
         raise HTTPException(
@@ -127,6 +127,12 @@ def delete_article(article_id: int, db: Session = Depends(get_db)):
 def send_digest(db: Session = Depends(get_db)):
     """Faol obunachilarga eng so'nggi chop etilgan 5 ta darsdan iborat email dayjest yuboradi."""
     subs = db.query(Subscription).filter(Subscription.is_active.is_(True)).all()
+    for subscription in subs:
+        if not subscription.unsubscribe_token:
+            subscription.unsubscribe_token = secrets.token_urlsafe(32)
+    if subs:
+        db.commit()
+
     emails = [s.email for s in subs]
     if not emails:
         return {"ok": True, "sent_count": 0, "xabar": "Faol obunachilar topilmadi"}
@@ -142,11 +148,19 @@ def send_digest(db: Session = Depends(get_db)):
         {"title": a.title, "summary": a.summary, "slug": a.slug} for a in articles
     ]
 
+    unsubscribe_urls = {
+        subscription.email: (
+            f"{BACKEND_PUBLIC_URL.rstrip('/')}/api/news/subscription/unsubscribe?token="
+            f"{subscription.unsubscribe_token}"
+        )
+        for subscription in subs
+        if subscription.unsubscribe_token
+    }
     sent_count = send_email_digest(
         to_emails=emails,
         subject="🎓 Biznes Darslari — Eng so'nggi amaliy darslar dayjesti",
-
         articles=art_dicts,
+        unsubscribe_urls=unsubscribe_urls,
     )
     return {"ok": True, "sent_count": sent_count, "xabar": f"Dayjest {sent_count} ta obunachiga yuborildi"}
 

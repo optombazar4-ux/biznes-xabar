@@ -8,7 +8,7 @@ services:
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: python -m app.migrate && uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    healthCheckPath: /health
+    healthCheckPath: /health/ready
     envVars:
       - key: DATABASE_URL
         sync: false          # Supabase pooler connection string
@@ -26,16 +26,18 @@ services:
         value: "gemini-2.5-flash-lite"
       - key: ADMIN_TOKEN
         sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: TELEGRAM_CHANNEL_ID
         value: "@biznesxabari"
       - key: AUTO_PUBLISH
-        value: "true"
+        value: "false"
       - key: AUTO_TELEGRAM
-        value: "true"
+        value: "false"
       - key: AUTO_TELEGRAM_MIN_IMPORTANCE
-        value: "1"
+        value: "4"
 
       - key: PIPELINE_INTERVAL
         value: "3600"
@@ -65,6 +67,8 @@ services:
         value: "https://biznesdarslari.uz"
       - key: CORS_ORIGINS
         value: "https://biznesdarslari.uz,https://biznes-xabar.vercel.app"
+      - key: TRUST_PROXY_HEADERS
+        value: "true"
       - key: BACKEND_PUBLIC_URL
         sync: false
       - key: SITE_URL

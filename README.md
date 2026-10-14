@@ -40,7 +40,7 @@ Admin panel ────────────┘        │
 cp .env.example .env
 ```
 
-Kamida `ADMIN_TOKEN` va kerakli AI/Telegram kalitlarini to‘ldiring. `ADMIN_TOKEN` kamida 24 belgili tasodifiy qiymat bo‘lishi shart.
+Kamida `ADMIN_TOKEN`, undan alohida `JWT_SECRET_KEY` va kerakli AI/Telegram kalitlarini to‘ldiring. `ADMIN_TOKEN` kamida 24, `JWT_SECRET_KEY` esa kamida 32 belgili tasodifiy qiymat bo‘lishi shart.
 
 2. Stackni ishga tushiring:
 
@@ -58,7 +58,7 @@ docker compose --profile bot up -d bot
 - Sayt: <http://localhost:3000>
 - Admin: <http://localhost:3000/admin>
 - API hujjatlari: <http://localhost:8000/docs>
-- Health check: <http://localhost:8000/health> (yengil; batafsil holat — `/health/details`)
+- Liveness: <http://localhost:8000/health/live>; readiness: <http://localhost:8000/health/ready>; batafsil holat — `/health/details`
 - Pipeline monitor: <http://localhost:8000/health/pipeline> (stale/error holatda HTTP 503)
 
 Backend container ishga tushishidan oldin `python -m app.migrate` orqali Alembic migratsiyasini xavfsiz bajaradi. Pipeline backend sog‘lom bo‘lgandan keyin boshlanadi.
@@ -108,11 +108,11 @@ python bot.py
 |---|---:|---|
 | `DATABASE_URL` | SQLite | PostgreSQL/SQLite ulanishi |
 | `ADMIN_TOKEN` | yo‘q | Admin login siri; kamida 24 belgi |
-| `JWT_SECRET_KEY` | `ADMIN_TOKEN` | Ixtiyoriy alohida JWT siri |
+| `JWT_SECRET_KEY` | yo‘q | Majburiy, `ADMIN_TOKEN`dan alohida 32+ belgili JWT siri |
 | `AI_PROVIDER` | `gemini` | `gemini`, `vertex` yoki `claude` |
-| `AUTO_PUBLISH` | `true` | Mos darslarni avtomatik chop etish |
-| `AUTO_PUBLISH_MIN_IMPORTANCE` | `1` | Avto-chop uchun minimal baho |
-| `AUTO_TELEGRAM` | `true` | Chop etilgan muhim darslarni yuborish |
+| `AUTO_PUBLISH` | `false` | AI darslarini admin tasdig‘isiz chop etmaslik |
+| `AUTO_PUBLISH_MIN_IMPORTANCE` | `4` | Avto-chop ataylab yoqilsa minimal baho |
+| `AUTO_TELEGRAM` | `false` | Telegramga avtomatik yuborishni o‘chirish |
 | `AUTO_TELEGRAM_MIN_IMPORTANCE` | `4` | Telegram uchun minimal baho |
 | `RUN_BACKGROUND_SERVICES` | `true` | API jarayonida pipeline/botni yuritish |
 | `PIPELINE_STALE_MINUTES` | `120` | Pipeline monitor uchun eskirish chegarasi |
@@ -124,6 +124,8 @@ python bot.py
 | `FRONTEND_ORIGIN` | `http://localhost:3000` | Kanonik frontend manzili |
 | `CORS_ORIGINS` | `FRONTEND_ORIGIN` | Vergul bilan ajratilgan ruxsatli originlar |
 | `BACKEND_PUBLIC_URL` | `http://localhost:8000` | Media fayllarning tashqi API manzili |
+| `SUBSCRIPTION_CONFIRMATION_TTL_HOURS` | `48` | Email obunani tasdiqlash havolasining amal qilish muddati |
+| `TRUST_PROXY_HEADERS` | `false` | Faqat ishonchli reverse proxy ortida haqiqiy mijoz IP’sini olish |
 
 Barcha mavjud parametrlar `.env.example` faylida ko‘rsatilgan.
 
@@ -142,6 +144,8 @@ Barcha mavjud parametrlar `.env.example` faylida ko‘rsatilgan.
 | GET | `/api/news/{slug}/audio` | Keshlangan/TTS audio |
 | GET | `/api/news/ideas/match` | Mezonga mos biznes g‘oyalari |
 | POST | `/api/news/subscribe` | Email obuna |
+| GET | `/api/news/subscription/confirm?token=` | Email obunasini tasdiqlash |
+| GET | `/api/news/subscription/unsubscribe?token=` | Email obunasini bekor qilish |
 | GET | `/api/categories` | Kategoriyalar |
 
 ### Admin
@@ -163,6 +167,7 @@ Admin token frontend bundle’da saqlanmaydi. JWT faqat brauzer sessiyasi davomi
 
 ```bash
 cd backend
+pip install -r requirements-dev.txt
 python -m pytest -q
 python -m compileall -q app
 
@@ -188,7 +193,7 @@ docker compose config --quiet
 
 - `render.yaml` backend, pipeline va botni bitta Render web-service jarayonida yuritish uchun sozlangan.
 - `frontend/vercel.json` frontendni Vercel’da joylashtirish uchun ishlatiladi.
-- Render’da `DATABASE_URL`, `ADMIN_TOKEN`, `BACKEND_PUBLIC_URL` va AI/Telegram sirlarini alohida kiriting.
+- Render’da `DATABASE_URL`, `ADMIN_TOKEN`, alohida `JWT_SECRET_KEY`, `BACKEND_PUBLIC_URL` va AI/Telegram sirlarini alohida kiriting.
 - Vercel’da `NEXT_PUBLIC_API_URL` backendning HTTPS manziliga teng bo‘lishi kerak.
 
 Sirlarni Git’ga commit qilmang. `.env`, service-account JSON va lokal bazalar `.gitignore` orqali chiqarib tashlangan.

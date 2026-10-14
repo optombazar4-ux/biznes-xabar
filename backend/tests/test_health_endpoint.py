@@ -51,6 +51,20 @@ class HealthEndpointTests(unittest.TestCase):
         self.assertEqual(result["database"], "ok")
         self.assertIn("pipeline", result)
 
+    def test_liveness_does_not_require_database(self):
+        self.assertEqual(main.liveness(), {"status": "ok"})
+
+    def test_readiness_returns_503_when_database_is_down(self):
+        broken = create_engine("postgresql+psycopg2://nobody@127.0.0.1:1/none")
+        BrokenSession = sessionmaker(bind=broken)
+        response = Response()
+        with patch.object(main, "SessionLocal", BrokenSession):
+            result = main.readiness(response)
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(result["status"], "not_ready")
+        broken.dispose()
+
     def test_runs_only_one_cheap_query(self):
         """Asosiy maqsad: COUNT'lar va IN so'rovi endi bajarilmasligi."""
         self.statements.clear()

@@ -22,7 +22,7 @@ VERTEX_GEMINI_MODEL = os.getenv("VERTEX_GEMINI_MODEL", "gemini-2.5-flash-lite")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-opus-4-8")
 
-# Admin panelga kirish uchun maxfiy token (X-Admin-Token sarlavhasi yoki JWT orqali).
+# Admin panelga kirish uchun maxfiy token.
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "").strip()
 UNSAFE_ADMIN_TOKENS = {
     "biznesdarslari2026adminsecret202608",
@@ -31,10 +31,17 @@ UNSAFE_ADMIN_TOKENS = {
     "bu-yerga-kuchli-tasodifiy-token-kiriting",
 }
 
-# JWT sozlamalari
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "").strip() or ADMIN_TOKEN
+# JWT uchun admin tokenidan alohida sir talab qilinadi. Bitta token ikkala
+# maqsad uchun ishlatilsa, JWT imzolash kaliti oshkor bo'lish xavfi ortadi.
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "").strip()
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "1440"))  # 24 soat
+
+# Obuna tasdiqlash havolasi cheklangan muddat yashaydi. Bekor qilish havolasi
+# esa dayjestlarda ishlashi uchun alohida, uzoq muddatli token bo'lib qoladi.
+SUBSCRIPTION_CONFIRMATION_TTL_HOURS = max(
+    1, min(168, int(os.getenv("SUBSCRIPTION_CONFIRMATION_TTL_HOURS", "48")))
+)
 
 
 
@@ -43,7 +50,8 @@ def admin_is_configured() -> bool:
     return (
         len(ADMIN_TOKEN) >= 24
         and ADMIN_TOKEN not in UNSAFE_ADMIN_TOKENS
-        and len(JWT_SECRET_KEY) >= 24
+        and len(JWT_SECRET_KEY) >= 32
+        and JWT_SECRET_KEY != ADMIN_TOKEN
     )
 
 
@@ -52,8 +60,8 @@ def validate_production_settings() -> None:
     """Xavfli admin token haqida ogohlantiradi; public API'ni yiqitmaydi."""
     if not admin_is_configured():
         print(
-            "OGOHLANTIRISH: ADMIN_TOKEN xavfsiz sozlanmagan. "
-            "Admin endpointlari yangi kuchli token berilguncha bloklandi."
+            "OGOHLANTIRISH: ADMIN_TOKEN yoki alohida JWT_SECRET_KEY xavfsiz "
+            "sozlanmagan. Admin endpointlari yangi kuchli sirlar berilguncha bloklandi."
         )
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
@@ -85,15 +93,12 @@ RSS_FEED_ITEMS_PER_SOURCE = max(
 )
 
 
-# Avto-chop etish: pipeline maqolalarni admin tasdig'isiz to'g'ridan-to'g'ri
-# saytga chiqaradi. O'chirish uchun: AUTO_PUBLISH=false
-AUTO_PUBLISH = _bool("AUTO_PUBLISH", "true")
-# Faqat shu bahodan yuqori maqolalar avto-chop etiladi (qolganlari pending)
-AUTO_PUBLISH_MIN_IMPORTANCE = int(os.getenv("AUTO_PUBLISH_MIN_IMPORTANCE", "1"))
-
-# Muhim yangiliklarni Telegram kanalga avtomatik yuborish
-AUTO_TELEGRAM = _bool("AUTO_TELEGRAM", "true")
-AUTO_TELEGRAM_MIN_IMPORTANCE = int(os.getenv("AUTO_TELEGRAM_MIN_IMPORTANCE", "1"))
+# AI yaratgan darslar avval admin ko'rigiga tushadi. Avtomatik chop etish va
+# Telegram jo'natish faqat sozlamani ataylab yoqqan deploylarda ishlaydi.
+AUTO_PUBLISH = _bool("AUTO_PUBLISH", "false")
+AUTO_PUBLISH_MIN_IMPORTANCE = int(os.getenv("AUTO_PUBLISH_MIN_IMPORTANCE", "4"))
+AUTO_TELEGRAM = _bool("AUTO_TELEGRAM", "false")
+AUTO_TELEGRAM_MIN_IMPORTANCE = int(os.getenv("AUTO_TELEGRAM_MIN_IMPORTANCE", "4"))
 
 
 # Rasm topilmaganda Gemini bilan generatsiya qilish (pullik — standart o'chiq)
@@ -118,3 +123,8 @@ STORAGE_MAX_FILE_MB = max(1, min(50, int(os.getenv("STORAGE_MAX_FILE_MB", "6")))
 # Frontend manzili (CORS uchun)
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", FRONTEND_ORIGIN)
+
+# Render kabi ishonchli reverse proxy ortida haqiqiy foydalanuvchi IP manzilini
+# X-Forwarded-For'dan olish mumkin. Buni faqat proxy sarlavhalarni almashtirib
+# beradigan deploylarda yoqing; bevosita Internetga ochiq serverda false qolsin.
+TRUST_PROXY_HEADERS = _bool("TRUST_PROXY_HEADERS", "false")
