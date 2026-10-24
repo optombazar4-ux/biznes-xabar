@@ -12,12 +12,17 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./biznesxabar.db")
 AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini").strip().lower()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 
 # Render kabi Google Cloud'dan tashqaridagi serverlar uchun Vertex AI + ADC.
 GOOGLE_CLOUD_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT", "")
 GOOGLE_CLOUD_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "global")
-VERTEX_GEMINI_MODEL = os.getenv("VERTEX_GEMINI_MODEL", "gemini-2.5-flash-lite")
+_raw_vertex_model = os.getenv("VERTEX_GEMINI_MODEL", "gemini-3.8-flash").strip()
+VERTEX_GEMINI_MODEL = (
+    "gemini-3.8-flash"
+    if _raw_vertex_model in ("", "gemini-2.5-flash-lite", "gemini-3.5-flash-lite")
+    else _raw_vertex_model
+)
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-opus-4-8")

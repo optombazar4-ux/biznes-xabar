@@ -1,6 +1,7 @@
 """Telegram kanaliga post yuborish (Bot API orqali)."""
 
 import html
+import re
 
 import httpx
 
@@ -15,15 +16,38 @@ def _truncate(value: str | None, limit: int) -> str:
     return f"{text[: limit - 1].rstrip()}…"
 
 
+def _extract_budget_hook(content: str | None, limit: int = 160) -> str:
+    """Maqoladagi 'Boshlang'ich budjet' bo'limidan birinchi aniq jumlani ajratadi."""
+    if not content:
+        return ""
+    match = re.search(
+        r"##\s+Boshlang['ʻʼ]?ich\s+budjet\s*\n+([^\n#]+)",
+        content,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return ""
+    line = re.sub(r"[*_`]+", "", match.group(1)).strip(" -•\t")
+    first_sentence = re.split(r"(?<=[.!?])\s+", line)[0].strip()
+    if not first_sentence or "so'm" not in first_sentence.lower():
+        return ""
+    return _truncate(first_sentence, limit)
+
+
 def format_post(article: Article, *, compact: bool = False) -> str:
     title_limit = 160 if compact else 300
-    summary_limit = 460 if compact else 1400
-    practical_limit = 180 if compact else 600
+    summary_limit = 380 if compact else 1100
+    practical_limit = 180 if compact else 500
     category = _truncate(
         article.category.name if article.category else "Biznes darsi",
         80,
     )
-    
+
+    budget_hook = _extract_budget_hook(article.content, 130 if compact else 200)
+    budget_block = (
+        f"💰 <b>Budjet:</b> {html.escape(budget_hook)}\n\n" if budget_hook else ""
+    )
+
     tags_text = ""
     if article.tags and isinstance(article.tags, list):
         hashtags = [f"#{tag.replace(' ', '_').replace('-', '_')}" for tag in article.tags if tag]
@@ -33,6 +57,7 @@ def format_post(article: Article, *, compact: bool = False) -> str:
     return (
         f"🎓 <b>{html.escape(_truncate(article.title, title_limit))}</b>\n\n"
         f"{html.escape(_truncate(article.summary, summary_limit))}\n\n"
+        f"{budget_block}"
         f"💡 <i>{html.escape(_truncate(article.practical_note, practical_limit))}</i>\n\n"
         f"📂 {html.escape(category)}{tags_text}"
     )

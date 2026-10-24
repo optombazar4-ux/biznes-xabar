@@ -44,6 +44,7 @@ from .services.education import (
     generate_dynamic_idea,
     generate_lesson,
     is_fallback,
+    _polish_uzbek_text,
 )
 from .services.rss_ideas import create_weekly_proposals
 from .services.telegram import send_to_channel
@@ -314,6 +315,15 @@ def _publish_pending_articles(db) -> int:
         if _is_saved_fallback(article):
             continue
         now = utcnow_naive()
+        article.title = _polish_uzbek_text(article.title) or article.title
+        article.seo_title = _polish_uzbek_text(article.seo_title) or article.seo_title
+        article.summary = _polish_uzbek_text(article.summary) or article.summary
+        article.content = _polish_uzbek_text(article.content) or article.content
+        article.practical_note = (
+            _polish_uzbek_text(article.practical_note) or article.practical_note
+        )
+        if article.quiz:
+            article.quiz = _clean_quiz(article.quiz)
         article.status = "published"
         article.published_at = now
         proposal = (

@@ -9,6 +9,7 @@ Mavzular kurator qilingan kurikulumdan olinadi — mavzu takrorlanmaydi.
 """
 
 import json
+import re
 
 import httpx
 
@@ -356,7 +357,7 @@ SYSTEM_PROMPT = """**Rol:** Sen tajribali o'zbek biznes-murabbiysan. O'zbekiston
 6. **Sarlavha:** "sarlavha" maydonida jalb qiluvchi, aniq o'zbekcha sarlavha ber.
 7. **Teglar:** "teglar" maydonida 3-6 ta mavzuga oid teg.
 9. **Test (Quiz):** "quiz" maydonida ushbu dars kontenti asosida foydalanuvchi bilimini sinovchi 3 ta interaktiv savol tayyorla. Har bir savolda: "question" (savol matni), "options" (4 ta variant), "answer_index" (0..3 oralig'ida to'g'ri javob indeksi) va "explanation" (javobning o'zbekcha qisqa tushuntirishi).
-10. **Til:** DOIM lotin alifbosidagi o'zbek tilida yoz.
+10. **Til va Imlo:** DOIM lotin alifbosidagi ravon va xatosiz o'zbek tilida yoz. Xorijiy yoki baynalmilal so'zlarni oldingi o'zbekcha so'zga HECH QACHON qo'shib yozma (masalan, "uchunFranchayzer" emas — "uchun franchayzer"). Hech bir bo'lim yoki ro'yxat bandini yarim joyidan uzib qoldirma, har bir fikrni to'liq nuqta bilan yakunla.
 11. **Format:** Javobni qat'iy JSON formatida qaytar."""
 
 LESSON_SCHEMA = {
@@ -587,6 +588,56 @@ TAG_FIXES = {
     "tadbirkolik": "tadbirkorlik",
 }
 
+CAMEL_BRANDS = {
+    "PayMe", "UzAuto", "iPhone", "iPad", "MacBook", "YouTube", "TikTok",
+    "McDonald", "LinkedIn", "GitHub", "GitLab", "WordPress", "WhatsApp",
+    "PowerPoint", "DeepSeek", "OpenAI", "ChatGPT", "MasterCard", "ClickUp",
+    "HubSpot", "QuickBooks", "MailChimp", "OneDrive", "SharePoint", "AdSense",
+    "AdWords", "WooCommerce", "BigCommerce", "SalesForce", "WeChat",
+}
+
+REQUIRED_IDEA_HEADINGS = (
+    "## G'oya qisqacha",
+    "## Kimga sotasiz",
+    "## Boshlang'ich budjet",
+    "## Daromad modeli",
+    "## 7 kunlik bozor sinovi",
+    "## Birinchi sotuv uchun qadamlar",
+    "## Xavflar va ularni kamaytirish",
+    "## Keyingi qadam",
+)
+
+
+def _split_glued_camel(match: re.Match) -> str:
+    full = match.group(0)
+    for brand in CAMEL_BRANDS:
+        if full.startswith(brand) or full.endswith(brand):
+            return full
+    return f"{match.group(1)} {match.group(2)}"
+
+
+def _polish_uzbek_text(value: str | None) -> str:
+    """AI javobidagi yopishib qolgan so'zlar, imlo va chala satrlarni tozalaydi."""
+    if not value:
+        return ""
+    text = str(value)
+    # Kichik o'zbekcha so'z oxiriga katta harfli so'z yopishib qolishi (masalan: "uchunFranchayzer")
+    text = re.sub(r"\b([a-zʻʼ']{2,})([A-Z][a-z]{3,})\b", _split_glued_camel, text)
+    # Tez-tez uchraydigan yopishish va imlo xatolarini tuzatish
+    text = re.sub(r"\bbepullanding\b", "bepul landing", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bEKMAS\b", "EMAS", text)
+    # Oxirida chala uzilib qolgan bo'sh ro'yxat bandlarini olib tashlash ("3. **" yoki "- **")
+    text = re.sub(r"(?:\n+|\s+)(?:\d+\.|[-*])\s*\*{0,2}\s*$", "", text.strip())
+    return text.strip()
+
+
+def _is_incomplete_idea_article(result: dict) -> bool:
+    if is_fallback(result):
+        return False
+    content = str(result.get("maqola") or "")
+    present = sum(1 for h in REQUIRED_IDEA_HEADINGS if h.lower() in content.lower())
+    return present < 6
+
 
 def _clean_tags(tags) -> list[str]:
     cleaned = []
@@ -612,8 +663,12 @@ def _clean_quiz(quiz) -> list[dict]:
     for item in quiz:
         if not isinstance(item, dict):
             continue
-        question = str(item.get("question") or "").strip()
-        options = [str(o).strip() for o in (item.get("options") or []) if str(o).strip()]
+        question = _polish_uzbek_text(item.get("question"))
+        options = [
+            _polish_uzbek_text(o)
+            for o in (item.get("options") or [])
+            if _polish_uzbek_text(o)
+        ]
         answer_index = item.get("answer_index")
         if not question or len(options) < 2 or not isinstance(answer_index, int):
             continue
@@ -623,26 +678,36 @@ def _clean_quiz(quiz) -> list[dict]:
             "question": question,
             "options": options,
             "answer_index": answer_index,
-            "explanation": str(item.get("explanation") or "").strip(),
+            "explanation": _polish_uzbek_text(item.get("explanation")),
         })
     return cleaned
 
 
-def generate_lesson(topic: str) -> dict:
-    """Bitta biznes darsi maqolasini yaratadi."""
-    if AI_PROVIDER == "claude":
-        result = _generate_with_claude(topic)
-    elif AI_PROVIDER == "vertex":
-        result = _generate_with_vertex(topic)
-    else:
-        result = _generate_with_gemini(topic)
+def _finalize_lesson_dict(result: dict, extra_tags: list[str]) -> dict:
+    for field in ("sarlavha", "seo_sarlavha", "xulosa", "maqola", "amaliy_ahamiyat"):
+        if field in result and isinstance(result[field], str):
+            result[field] = _polish_uzbek_text(result[field])
     generated_tags = _clean_tags(result.get("teglar"))
-    required_tags = IDEA_TOPIC_TAGS.get(topic, [])
-    # G'oya filtrlari model javobiga bog'liq bo'lmasin; tartibni saqlab,
-    # takrorlarni olib tashlaymiz.
-    result["teglar"] = list(dict.fromkeys([*required_tags, *generated_tags]))[:6]
+    result["teglar"] = list(dict.fromkeys([*extra_tags, *generated_tags]))[:6]
     result["quiz"] = _clean_quiz(result.get("quiz"))
     return result
+
+
+def _call_ai_provider(topic: str, prompt: str | None = None) -> dict:
+    if AI_PROVIDER == "claude":
+        return _generate_with_claude(topic, prompt)
+    if AI_PROVIDER == "vertex":
+        return _generate_with_vertex(topic, prompt)
+    return _generate_with_gemini(topic, prompt)
+
+
+def generate_lesson(topic: str) -> dict:
+    """Bitta biznes darsi maqolasini yaratadi."""
+    result = _call_ai_provider(topic)
+    if topic in IDEA_TOPIC_TAGS and _is_incomplete_idea_article(result):
+        result = _call_ai_provider(topic)
+    required_tags = IDEA_TOPIC_TAGS.get(topic, [])
+    return _finalize_lesson_dict(result, required_tags)
 
 
 def generate_dynamic_idea(
@@ -654,13 +719,7 @@ def generate_dynamic_idea(
     """Validatsiyadan o'tgan AI taklifini to'liq biznes g'oyasi maqolasiga aylantiradi."""
     safe_filters = [tag for tag in filters if tag in IDEA_FILTERS]
     prompt = _idea_prompt(topic, safe_filters, context=context)
-    if AI_PROVIDER == "claude":
-        result = _generate_with_claude(topic, prompt)
-    elif AI_PROVIDER == "vertex":
-        result = _generate_with_vertex(topic, prompt)
-    else:
-        result = _generate_with_gemini(topic, prompt)
-    generated_tags = _clean_tags(result.get("teglar"))
-    result["teglar"] = list(dict.fromkeys([*safe_filters, *generated_tags]))[:6]
-    result["quiz"] = _clean_quiz(result.get("quiz"))
-    return result
+    result = _call_ai_provider(topic, prompt)
+    if _is_incomplete_idea_article(result):
+        result = _call_ai_provider(topic, prompt)
+    return _finalize_lesson_dict(result, safe_filters)
