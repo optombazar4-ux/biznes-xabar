@@ -215,6 +215,63 @@ class PipelineStageTests(unittest.TestCase):
             self.assertEqual(proposal.status, "published")
             self.assertIsNotNone(proposal.article_id)
 
+    def test_pending_non_fallback_articles_are_published_when_auto_publish_enabled(self):
+        with self.session_factory() as db:
+            ai_article = Article(
+                title="AI tayyorlagan g'oya",
+                slug="ai-tayyorlagan-goya",
+                original_title="AI tayyorlagan g'oya",
+                original_url="internal://dars/ai-tayyorlagan-goya",
+                source_name="Biznes Darslari",
+                content="## G'oya qisqacha\nHaqiqiy AI matni",
+                importance=4,
+                status="pending",
+            )
+            fallback_article = Article(
+                title="Zaxira shablon",
+                slug="zaxira-shablon",
+                original_title="Zaxira shablon",
+                original_url="internal://dars/zaxira-shablon",
+                source_name="Biznes Darslari",
+                content="# Zaxira\n\n## 1. Bozordagi Talab va Konsept\nShablon",
+                importance=3,
+                status="pending",
+            )
+            db.add_all([ai_article, fallback_article])
+            db.flush()
+            proposal = IdeaProposal(
+                title="AI tayyorlagan g'oya",
+                filters=["onlayn", "xizmat"],
+                source_urls=["https://example.com/trend"],
+                source_names=["Example Business"],
+                source_titles=["Trend"],
+                rationale="Sabab",
+                estimated_budget_min=1_000_000,
+                estimated_budget_max=3_000_000,
+                risks="Xavf",
+                status="generated",
+                article_id=ai_article.id,
+            )
+            db.add(proposal)
+            db.commit()
+
+            with (
+                patch.object(pipeline, "AUTO_PUBLISH", True),
+                patch.object(pipeline, "AUTO_PUBLISH_MIN_IMPORTANCE", 1),
+                patch.object(pipeline, "_send_to_telegram_if_enabled") as tg_mock,
+            ):
+                published_count = pipeline._publish_pending_articles(db)
+
+            self.assertEqual(published_count, 1)
+            tg_mock.assert_called_once()
+            db.refresh(ai_article)
+            db.refresh(fallback_article)
+            db.refresh(proposal)
+            self.assertEqual(ai_article.status, "published")
+            self.assertIsNotNone(ai_article.published_at)
+            self.assertEqual(proposal.status, "published")
+            self.assertEqual(fallback_article.status, "pending")
+
 
 if __name__ == "__main__":
     unittest.main()

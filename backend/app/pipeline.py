@@ -289,6 +289,49 @@ def _send_to_telegram_if_enabled(db, article: Article) -> None:
 
 
 
+FALLBACK_CONTENT_MARKER = "## 1. Bozordagi Talab va Konsept"
+
+
+def _is_saved_fallback(article: Article) -> bool:
+    return FALLBACK_CONTENT_MARKER in (article.content or "")
+
+
+def _publish_pending_articles(db) -> int:
+    """AUTO_PUBLISH o'chiq paytida yig'ilib qolgan tayyor AI darslarini chop etadi."""
+    if not AUTO_PUBLISH:
+        return 0
+    pending_articles = (
+        db.query(Article)
+        .filter(
+            Article.status == "pending",
+            Article.importance >= AUTO_PUBLISH_MIN_IMPORTANCE,
+        )
+        .order_by(Article.created_at.asc(), Article.id.asc())
+        .all()
+    )
+    published_count = 0
+    for article in pending_articles:
+        if _is_saved_fallback(article):
+            continue
+        now = utcnow_naive()
+        article.status = "published"
+        article.published_at = now
+        proposal = (
+            db.query(IdeaProposal)
+            .filter(IdeaProposal.article_id == article.id)
+            .first()
+        )
+        if proposal and proposal.status == "generated":
+            proposal.status = "published"
+            proposal.published_at = now
+        db.commit()
+        _send_to_telegram_if_enabled(db, article)
+        published_count += 1
+        if published_count >= LESSON_BATCH_PER_RUN:
+            break
+    return published_count
+
+
 def run_pipeline(per_feed: int = 0, trigger: str = "background") -> int:
     """Kurikulum yoki RSS-AI navbatidan yangi darslar yaratadi.
 
@@ -377,6 +420,14 @@ def run_pipeline(per_feed: int = 0, trigger: str = "background") -> int:
             )
 
         if not batch:
+            published_pending = _publish_pending_articles(db)
+            if published_pending:
+                print(
+                    f"✅ Navbatdagi {published_pending} ta tayyor dars chop etildi "
+                    "va yuborildi."
+                )
+                _finish_pipeline_run(run_id, "ok", published_pending)
+                return published_pending
             print("✅ Hozircha yangi mavzu yoki tasdiqlangan RSS g'oya yo'q.")
             _finish_pipeline_run(run_id, "ok", 0)
             return 0

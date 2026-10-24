@@ -33,11 +33,13 @@ services:
       - key: TELEGRAM_CHANNEL_ID
         value: "@biznesxabari"
       - key: AUTO_PUBLISH
-        value: "false"
+        value: "true"
+      - key: AUTO_PUBLISH_MIN_IMPORTANCE
+        value: "1"
       - key: AUTO_TELEGRAM
-        value: "false"
+        value: "true"
       - key: AUTO_TELEGRAM_MIN_IMPORTANCE
-        value: "4"
+        value: "1"
 
       - key: PIPELINE_INTERVAL
         value: "3600"

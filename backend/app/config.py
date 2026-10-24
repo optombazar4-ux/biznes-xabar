@@ -93,12 +93,12 @@ RSS_FEED_ITEMS_PER_SOURCE = max(
 )
 
 
-# AI yaratgan darslar avval admin ko'rigiga tushadi. Avtomatik chop etish va
-# Telegram jo'natish faqat sozlamani ataylab yoqqan deploylarda ishlaydi.
-AUTO_PUBLISH = _bool("AUTO_PUBLISH", "false")
-AUTO_PUBLISH_MIN_IMPORTANCE = int(os.getenv("AUTO_PUBLISH_MIN_IMPORTANCE", "4"))
-AUTO_TELEGRAM = _bool("AUTO_TELEGRAM", "false")
-AUTO_TELEGRAM_MIN_IMPORTANCE = int(os.getenv("AUTO_TELEGRAM_MIN_IMPORTANCE", "4"))
+# Avto-chop etish: pipeline maqolalarni admin tasdig'isiz to'g'ridan-to'g'ri
+# saytga chiqaradi. O'chirish uchun: AUTO_PUBLISH=false
+AUTO_PUBLISH = _bool("AUTO_PUBLISH", "true")
+AUTO_PUBLISH_MIN_IMPORTANCE = int(os.getenv("AUTO_PUBLISH_MIN_IMPORTANCE", "1"))
+AUTO_TELEGRAM = _bool("AUTO_TELEGRAM", "true")
+AUTO_TELEGRAM_MIN_IMPORTANCE = int(os.getenv("AUTO_TELEGRAM_MIN_IMPORTANCE", "1"))
 
 
 # Rasm topilmaganda Gemini bilan generatsiya qilish (pullik — standart o'chiq)
