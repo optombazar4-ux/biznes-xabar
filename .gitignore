@@ -22,3 +22,6 @@ out/
 *-sa.json
 *service-account*.json
 google-credentials*.json
+
+# Agent lokal chat tarixi
+.agent_chat_history.json
