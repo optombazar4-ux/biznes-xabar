@@ -338,9 +338,11 @@ def get_rss_feed(db: Session = Depends(get_db)):
     )
 
     rss_items = []
+    origin = FRONTEND_ORIGIN.rstrip("/")
     for article in articles:
         pub_date = article.published_at.strftime("%a, %d %b %Y %H:%M:%S GMT") if article.published_at else ""
-        link = f"{FRONTEND_ORIGIN}/maqola/{article.slug}"
+        cat_slug = article.category.slug if article.category else "biznesni-boshlash"
+        link = f"{origin}/{cat_slug}/{article.slug}"
         rss_items.append(
             f"<item>\n"
             f"  <title>{html.escape(article.title)}</title>\n"
@@ -357,7 +359,8 @@ def get_rss_feed(db: Session = Depends(get_db)):
         f"<rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\">\n"
         f"<channel>\n"
         f"  <title>Biznes Darslari — O'zbekistonda biznes ochish va yuritish</title>\n"
-        f"  <link>{FRONTEND_ORIGIN}</link>\n"
+        f"  <link>{origin}</link>\n"
+        f"  <atom:link href=\"{origin}/api/news/rss\" rel=\"self\" type=\"application/rss+xml\" />\n"
         f"  <description>O'zbek tadbirkorlari uchun amaliy biznes darslari — jahon tajribasi asosida.</description>\n"
         f"  <language>uz</language>\n"
         f"  {rss_items_str}\n"

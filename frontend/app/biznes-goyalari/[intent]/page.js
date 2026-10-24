@@ -20,7 +20,7 @@ const INTENTS = {
   },
   qishloq: {
     name: "Qishloqda biznes g'oyalari",
-    title: "Qishloq va tumanlar uchun daromadli va moslashtirilgan biznes g mezonlari",
+    title: "Qishloq va tumanlar uchun daromadli va moslashtirilgan biznes g'oyalari",
     description: "Tuman va qishloq sharoitida qishloq xo'jaligi, mahsulotlarni qadoqlash va mahalliy xizmatlar bo'yicha amaliy biznes g'oyalari.",
     filter: "qishloq",
   },

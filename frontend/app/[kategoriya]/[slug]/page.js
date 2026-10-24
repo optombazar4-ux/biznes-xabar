@@ -80,17 +80,34 @@ function jsonLd(article, catSlug) {
     ].filter(Boolean),
   };
 
-  const faqLd = article.quiz && article.quiz.length > 0 ? {
+  const faqItems = Array.isArray(article.quiz)
+    ? article.quiz
+        .map((q) => {
+          const question = q?.question || q?.savol;
+          const options = q?.options || q?.variantlar;
+          const idx = q?.answer_index ?? q?.togri_indeks ?? q?.tofri_indeks ?? 0;
+          const optionText = Array.isArray(options) ? options[idx] : "";
+          const explanation = q?.explanation || q?.izoh || "";
+          const answerText =
+            [optionText, explanation].filter(Boolean).join(" — ") ||
+            "Batafsil dars sahifasida.";
+          if (!question) return null;
+          return {
+            "@type": "Question",
+            name: question,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: answerText,
+            },
+          };
+        })
+        .filter(Boolean)
+    : [];
+
+  const faqLd = faqItems.length > 0 ? {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: article.quiz.map((q) => ({
-      "@type": "Question",
-      name: q.savol,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: q.variantlar ? q.variantlar[q.togri_indeks ?? q.tofri_indeks ?? 0] : "Batafsil dars sahifasida.",
-      },
-    })),
+    mainEntity: faqItems,
   } : null;
 
   const howToLd = article.practical_note ? {
