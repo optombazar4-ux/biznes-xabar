@@ -302,6 +302,19 @@ def _is_low_quality_pending(article: Article) -> bool:
     return bool(find_unrealistic_terms(f"{article.title or ''} {article.summary or ''}"))
 
 
+def _cleanup_published_low_value(db) -> int:
+    """Eski filtrdan o'tmay qolgan mavjud chop etilgan maqolalarni yashiradi."""
+    rejected = 0
+    for article in db.query(Article).filter(Article.status == "published").all():
+        if _is_saved_fallback(article) or _is_low_quality_pending(article):
+            article.status = "rejected"
+            rejected += 1
+    if rejected:
+        db.commit()
+        print(f"🧹 O'zbekistonga mos bo'lmagan {rejected} ta eski maqola yashirildi.")
+    return rejected
+
+
 def _publish_pending_articles(db) -> int:
     """AUTO_PUBLISH o'chiq paytida yig'ilib qolgan tayyor AI darslarini chop etadi."""
     if not AUTO_PUBLISH:
@@ -371,6 +384,7 @@ def run_pipeline(per_feed: int = 0, trigger: str = "background") -> int:
         db = SessionLocal()
         seed_categories(db)
         prune_legacy_content(db)
+        _cleanup_published_low_value(db)
         categories = {c.slug: c for c in db.query(Category).all()}
 
         # Yoritilgan mavzular (original_title = mavzu deb saqlaymiz)

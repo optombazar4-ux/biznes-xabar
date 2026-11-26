@@ -118,6 +118,8 @@ UNAVAILABLE_OR_LOW_VALUE_TERMS = {
     "uber eats",
     "windows 11",
     "windows 10",
+    "yelp",
+    "yelp assistant",
     "phone link",
     "telefon integratsiyasi",
     "transaktsion elektron",

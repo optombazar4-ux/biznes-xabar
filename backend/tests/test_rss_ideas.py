@@ -248,6 +248,45 @@ class PipelineStageTests(unittest.TestCase):
             self.assertEqual(proposal.status, "published")
             self.assertIsNotNone(proposal.article_id)
 
+    def test_cleanup_published_low_value_hides_unrealistic_articles(self):
+        with self.session_factory() as db:
+            db.add_all([
+                Article(
+                    title="TikTok Shop: Uzbek tadbirkorlari uchun yangi savdo maydonchasi",
+                    slug="tiktok-shop",
+                    summary="TikTok Shop imkoniyatlari",
+                    original_title="TikTok Shop",
+                    original_url="internal://dars/ai-goya-1",
+                    source_name="RSS",
+                    status="published",
+                ),
+                Article(
+                    title="Yelp Assistant: O'zbekistonlik kichik bizneslar uchun yangi imkoniyat",
+                    slug="yelp-assistant",
+                    summary="Yelp xizmati",
+                    original_title="Yelp Assistant",
+                    original_url="internal://dars/ai-goya-2",
+                    source_name="RSS",
+                    status="published",
+                ),
+                Article(
+                    title="O'zbekistonda mahalliy qahvaxona ochish rejasi",
+                    slug="qahvaxona",
+                    summary="Real biznes rejasi",
+                    original_title="Qahvaxona",
+                    original_url="internal://dars/qahvaxona",
+                    source_name="Biznes Darslari",
+                    status="published",
+                ),
+            ])
+            db.commit()
+
+            hidden = pipeline._cleanup_published_low_value(db)
+            self.assertEqual(hidden, 2)
+            self.assertEqual(db.query(Article).filter_by(slug="tiktok-shop").one().status, "rejected")
+            self.assertEqual(db.query(Article).filter_by(slug="yelp-assistant").one().status, "rejected")
+            self.assertEqual(db.query(Article).filter_by(slug="qahvaxona").one().status, "published")
+
     def test_pending_non_fallback_articles_are_published_when_auto_publish_enabled(self):
         with self.session_factory() as db:
             ai_article = Article(
