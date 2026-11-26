@@ -7,14 +7,14 @@ import MobileNav from "../components/MobileNav";
 import { SITE_URL, SITE_NAME, SITE_ALT_NAMES } from "../lib/site";
 
 const DESCRIPTION =
-  "O'zbekistonda biznes ochish va yuritish bo'yicha amaliy darslar — jahon tajribasi asosida, o'zbek tilida. Biznesni boshlash, moliya, marketing, sotuv, boshqaruv va onlayn biznes.";
+  "O'zbekistonda biznes ochish va yuritish bo'yicha bepul amaliy darslar, biznes g'oyalari, soliq yo'riqnomalari va moliyaviy kalkulyatorlar.";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "G-BZNDRSLR26";
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} — O'zbekistonda biznes ochish va yuritishni o'rganing`,
+    default: `${SITE_NAME} — O'zbekistonda biznes ochish va yuritish`,
     template: `%s — ${SITE_NAME}`,
   },
   description: DESCRIPTION,
@@ -36,7 +36,7 @@ export const metadata = {
     url: "/",
     siteName: SITE_NAME,
     locale: "uz_UZ",
-    title: `${SITE_NAME} — O'zbekistonda biznes ochish va yuritishni o'rganing`,
+    title: `${SITE_NAME} — O'zbekistonda biznes ochish va yuritish`,
     description: DESCRIPTION,
   },
   twitter: {

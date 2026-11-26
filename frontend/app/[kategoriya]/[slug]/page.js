@@ -12,19 +12,23 @@ import TelegramBanner from "../../../components/TelegramBanner";
 import { apiGet } from "../../../lib/api";
 import { SITE_URL, SITE_NAME } from "../../../lib/site";
 import { readingMinutes, levelForCategory, formatDate } from "../../../lib/lesson";
+import { fitMetaDescription, fitMetaTitle, plainMetaTitle } from "../../../lib/seo";
 
 export async function generateMetadata({ params }) {
   const { kategoriya, slug } = await params;
   const article = await apiGet(`/api/news/${slug}`);
   if (!article) return { title: "Dars topilmadi" };
 
-  const title = article.seo_title || article.title;
+  const rawTitle = article.seo_title || article.title;
+  const titleValue = fitMetaTitle(rawTitle);
+  const plainTitle = plainMetaTitle(titleValue);
+  const description = fitMetaDescription(article.summary);
   const catSlug = article.category?.slug || kategoriya;
   const url = `/${catSlug}/${article.slug}`;
 
   return {
-    title,
-    description: article.summary,
+    title: titleValue,
+    description,
     keywords: article.tags || [],
     alternates: { canonical: url },
     openGraph: {
@@ -32,16 +36,16 @@ export async function generateMetadata({ params }) {
       url,
       siteName: SITE_NAME,
       locale: "uz_UZ",
-      title,
-      description: article.summary,
+      title: plainTitle,
+      description,
       publishedTime: article.published_at || article.created_at,
       section: article.category?.name,
       tags: article.tags || [],
     },
     twitter: {
       card: "summary_large_image",
-      title,
-      description: article.summary,
+      title: plainTitle,
+      description,
     },
   };
 }

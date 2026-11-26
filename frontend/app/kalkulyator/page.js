@@ -1,9 +1,9 @@
 import BusinessCalculator from "../../components/BusinessCalculator";
 
 export const metadata = {
-  title: "Biznes Kalkulyatori — Tannarx, Marja va Zararsizlik Nuqtasi Hisoblagich",
+  title: "Biznes Kalkulyatori — Marja va Zararsizlik",
   description:
-    "O'zbekistonda tadbirkorlar va startaplar uchun bepul interaktiv biznes kalkulyatori: unit economics, marja foizi va break-even zararsizlik hajmini so'mda hisoblang.",
+    "Tadbirkorlar uchun bepul biznes kalkulyatori: unit economics, tannarx, marja foizi va break-even zararsizlik nuqtasini so'mda hisoblang.",
   alternates: { canonical: "/kalkulyator" },
 };
 

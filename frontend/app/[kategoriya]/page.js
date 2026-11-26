@@ -3,11 +3,22 @@ import CourseList from "../../components/CourseList";
 import IdeaList from "../../components/IdeaList";
 import { apiGet } from "../../lib/api";
 import { articleMinutes } from "../../lib/lesson";
+import { fitMetaDescription, fitMetaTitle, plainMetaTitle } from "../../lib/seo";
 import { SITE_URL } from "../../lib/site";
+
+const KNOWN_CATEGORIES = {
+  "biznes-goyalari": { name: "Biznes g'oyalari", slug: "biznes-goyalari" },
+  "biznesni-boshlash": { name: "Biznesni boshlash", slug: "biznesni-boshlash" },
+  moliya: { name: "Moliya va hisob", slug: "moliya" },
+  "marketing-sotuv": { name: "Marketing va sotuv", slug: "marketing-sotuv" },
+  boshqaruv: { name: "Boshqaruv va o'sish", slug: "boshqaruv" },
+  "onlayn-biznes": { name: "Onlayn biznes", slug: "onlayn-biznes" },
+  "amaliy-konikmalar": { name: "Amaliy ko'nikmalar", slug: "amaliy-konikmalar" },
+};
 
 async function getCategory(slug) {
   const categories = (await apiGet("/api/categories")) || [];
-  return categories.find((c) => c.slug === slug) || null;
+  return categories.find((c) => c.slug === slug) || KNOWN_CATEGORIES[slug] || null;
 }
 
 export async function generateMetadata({ params }) {
@@ -15,14 +26,18 @@ export async function generateMetadata({ params }) {
   const category = await getCategory(kategoriya);
   if (!category) return { title: "Bo'lim topilmadi" };
   const name = category.name;
+  const titleValue = fitMetaTitle(`${name} — amaliy darslar`);
+  const description = fitMetaDescription(
+    `${name} bo'yicha amaliy biznes darslari kursi — bosqichma-bosqich, O'zbekiston sharoitiga moslashtirilgan.`
+  );
 
   return {
-    title: `${name} — biznes darslari kursi`,
-    description: `${name} bo'yicha amaliy biznes darslari kursi — bosqichma-bosqich, O'zbekiston sharoitiga moslashtirilgan.`,
+    title: titleValue,
+    description,
     alternates: { canonical: `/${kategoriya}` },
     openGraph: {
-      title: `${name} — biznes darslari kursi`,
-      description: `${name} bo'yicha bosqichma-bosqich biznes darslari — o'zbek tilida.`,
+      title: plainMetaTitle(titleValue),
+      description,
       url: `/${kategoriya}`,
     },
   };

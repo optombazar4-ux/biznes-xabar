@@ -3,6 +3,7 @@ import LessonPage, { generateMetadata as generateLessonMetadata } from "../../[k
 import IdeaList from "../../../components/IdeaList";
 import { apiGet } from "../../../lib/api";
 import { articleMinutes } from "../../../lib/lesson";
+import { fitMetaDescription, fitMetaTitle, plainMetaTitle } from "../../../lib/seo";
 import { SITE_URL } from "../../../lib/site";
 
 const INTENTS = {
@@ -62,13 +63,16 @@ export async function generateMetadata({ params }) {
     return generateLessonMetadata({ params: Promise.resolve({ kategoriya: "biznes-goyalari", slug: intent }) });
   }
 
+  const titleValue = fitMetaTitle(config.title);
+  const description = fitMetaDescription(config.description);
+
   return {
-    title: config.title,
-    description: config.description,
+    title: titleValue,
+    description,
     alternates: { canonical: `/biznes-goyalari/${intent}` },
     openGraph: {
-      title: config.title,
-      description: config.description,
+      title: plainMetaTitle(titleValue),
+      description,
       url: `/biznes-goyalari/${intent}`,
     },
   };
