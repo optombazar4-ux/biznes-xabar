@@ -15,6 +15,8 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from xml.etree import ElementTree
 
 import httpx
+
+from .gemini_keys import gemini_keys, post_gemini
 from sqlalchemy.orm import Session
 
 from ..config import (
@@ -359,7 +361,7 @@ _TRANSIENT_HTTP_STATUSES = {429, 500, 502, 503, 504}
 
 
 def _generate_with_gemini(user_text: str) -> dict:
-    if not GEMINI_API_KEY:
+    if not gemini_keys(GEMINI_API_KEY):
         raise RuntimeError("GEMINI_API_KEY sozlanmagan")
     payload = {
         "systemInstruction": {"parts": [{"text": SUGGESTION_SYSTEM_PROMPT}]},
@@ -378,12 +380,7 @@ def _generate_with_gemini(user_text: str) -> dict:
             f"{model}:generateContent"
         )
         try:
-            response = httpx.post(
-                url,
-                json=payload,
-                headers={"x-goog-api-key": GEMINI_API_KEY},
-                timeout=60,
-            )
+            response = post_gemini(url, payload, GEMINI_API_KEY)
         except (httpx.TimeoutException, httpx.RequestError) as error:
             last_error = f"Gemini API ({model}) tarmoq/timeout xatosi: {error}"
             print(f"   ⚠ {last_error}")
@@ -489,7 +486,7 @@ def suggest_ideas(signals: list[dict], existing_titles: list[str]) -> list[dict]
         try:
             result = _generate_with_vertex(user_text)
         except Exception as error:
-            if GEMINI_API_KEY:
+            if gemini_keys(GEMINI_API_KEY):
                 print(
                     f"   ⚠ Vertex AI ishlamadi ({error}); Gemini API zaxira yo'liga o'tilmoqda."
                 )

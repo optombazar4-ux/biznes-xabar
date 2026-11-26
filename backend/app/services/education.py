@@ -13,6 +13,8 @@ import re
 
 import httpx
 
+from .gemini_keys import gemini_keys, post_gemini
+
 from ..config import (
     AI_PROVIDER,
     ANTHROPIC_API_KEY,
@@ -466,7 +468,7 @@ def _extract_response_text(data: dict) -> str:
 
 
 def _generate_with_gemini(topic: str, user_prompt: str | None = None) -> dict:
-    if not GEMINI_API_KEY:
+    if not gemini_keys(GEMINI_API_KEY):
         return _generate_curated_fallback(topic)
     payload = {
         "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
@@ -483,9 +485,7 @@ def _generate_with_gemini(topic: str, user_prompt: str | None = None) -> dict:
             f"{model}:generateContent"
         )
         try:
-            response = httpx.post(
-                url, json=payload, headers={"x-goog-api-key": GEMINI_API_KEY}, timeout=60
-            )
+            response = post_gemini(url, payload, GEMINI_API_KEY)
             if response.status_code == 200:
                 data = response.json()
                 text = _extract_response_text(data)
@@ -760,7 +760,7 @@ def _call_ai_provider(topic: str, prompt: str | None = None) -> dict:
         try:
             return _generate_with_vertex(topic, prompt)
         except Exception as error:
-            if GEMINI_API_KEY:
+            if gemini_keys(GEMINI_API_KEY):
                 print(
                     f"   ⚠ Vertex AI ishlamadi ({error}); Gemini API zaxira yo'liga o'tilmoqda."
                 )
