@@ -260,7 +260,7 @@ class GeminiModelFallbackTests(unittest.TestCase):
             patch.object(
                 education,
                 "GEMINI_FALLBACK_MODELS",
-                ("gemini-3.7-flash", "gemini-3.1-flash-lite"),
+                ("gemini-4-hydrogen", "gemini-3.5-flash-lite"),
             ),
             patch.object(education.httpx, "post", side_effect=fake_post),
         ):
@@ -269,7 +269,7 @@ class GeminiModelFallbackTests(unittest.TestCase):
         self.assertEqual(result, {"sarlavha": "Zaxira model darsi"})
         self.assertEqual(len(calls), 2)
         self.assertIn("gemini-3.8-flash", calls[0])
-        self.assertIn("gemini-3.7-flash", calls[1])
+        self.assertIn("gemini-4-hydrogen", calls[1])
 
 
 if __name__ == "__main__":

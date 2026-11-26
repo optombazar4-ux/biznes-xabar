@@ -397,7 +397,11 @@ class SuggestIdeasFallbackTests(unittest.TestCase):
         with (
             patch.object(rss_ideas, "GEMINI_API_KEY", "test-key"),
             patch.object(rss_ideas, "GEMINI_MODEL", "gemini-3.8-flash"),
-            patch.object(rss_ideas, "GEMINI_FALLBACK_MODELS", ("gemini-3.7-flash",)),
+            patch.object(
+                rss_ideas,
+                "GEMINI_FALLBACK_MODELS",
+                ("gemini-4-hydrogen", "gemini-3.5-flash-lite"),
+            ),
             patch.object(rss_ideas.httpx, "post", side_effect=fake_post),
         ):
             result = rss_ideas._generate_with_gemini("test")
@@ -405,7 +409,7 @@ class SuggestIdeasFallbackTests(unittest.TestCase):
         self.assertEqual(result, {"goyalar": [{"mavzu": "Model fallback g'oya"}]})
         self.assertEqual(len(calls), 2)
         self.assertIn("gemini-3.8-flash", calls[0])
-        self.assertIn("gemini-3.7-flash", calls[1])
+        self.assertIn("gemini-4-hydrogen", calls[1])
 
 
 if __name__ == "__main__":

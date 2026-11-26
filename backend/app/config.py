@@ -15,7 +15,6 @@ _DEPRECATED_GEMINI_MODELS = (
     "",
     "gemini-2.5-flash",
     "gemini-2.5-flash-lite",
-    "gemini-3.5-flash-lite",
 )
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
@@ -28,7 +27,7 @@ GEMINI_MODEL = (
 GEMINI_FALLBACK_MODELS = tuple(
     m.strip()
     for m in os.getenv(
-        "GEMINI_FALLBACK_MODELS", "gemini-3.7-flash,gemini-3.1-flash-lite"
+        "GEMINI_FALLBACK_MODELS", "gemini-4-hydrogen,gemini-3.5-flash-lite"
     ).split(",")
     if m.strip()
 )
