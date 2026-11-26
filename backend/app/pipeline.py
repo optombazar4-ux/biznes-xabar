@@ -44,6 +44,7 @@ from .services.education import (
     generate_dynamic_idea,
     generate_lesson,
     is_fallback,
+    _clean_quiz,
     _polish_uzbek_text,
 )
 from .services.rss_ideas import create_weekly_proposals
@@ -388,6 +389,7 @@ def run_pipeline(per_feed: int = 0, trigger: str = "background") -> int:
 
         # 2-bosqich: katalog tugagach, har kuni RSS trendlaridan 5–10 ta
         # taklif olinadi. Faqat validatsiyadan o'tgan navbat maqolaga aylanadi.
+        rss_error: Exception | None = None
         if not idea_remaining and RSS_IDEA_ENABLED:
             print("📡 Kuratsiya katalogi tayyor. Kunlik RSS trendlar tekshirilmoqda...")
             try:
@@ -395,6 +397,7 @@ def run_pipeline(per_feed: int = 0, trigger: str = "background") -> int:
             except Exception as error:
                 # RSS yoki taklif AI vaqtincha ishlamasa ham asosiy kurikulum
                 # va API ishlashda davom etadi.
+                rss_error = error
                 db.rollback()
                 print(f"   ✗ Kunlik RSS-AI takliflari xatosi: {error}")
             proposals = (
@@ -438,6 +441,10 @@ def run_pipeline(per_feed: int = 0, trigger: str = "background") -> int:
                 )
                 _finish_pipeline_run(run_id, "ok", published_pending)
                 return published_pending
+            if rss_error is not None:
+                raise RuntimeError(
+                    f"Kunlik RSS-AI takliflari xatosi: {rss_error}"
+                ) from rss_error
             print("✅ Hozircha yangi mavzu yoki tasdiqlangan RSS g'oya yo'q.")
             _finish_pipeline_run(run_id, "ok", 0)
             return 0

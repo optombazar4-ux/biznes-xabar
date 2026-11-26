@@ -8,6 +8,7 @@ takrorlanish, budjet, filtr va xavfsizlik bo'yicha tekshiriladi.
 import html
 import json
 import re
+import time
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
@@ -21,6 +22,7 @@ from ..config import (
     ANTHROPIC_API_KEY,
     CLAUDE_MODEL,
     GEMINI_API_KEY,
+    GEMINI_FALLBACK_MODELS,
     GEMINI_MODEL,
     GOOGLE_CLOUD_LOCATION,
     GOOGLE_CLOUD_PROJECT,
@@ -31,7 +33,7 @@ from ..config import (
 )
 from ..models import Article, IdeaProposal, IdeaProposalRun
 from ..utils import is_near_duplicate, title_tokens, utcnow_naive
-from .education import IDEA_FILTERS, IDEA_TOPICS
+from .education import IDEA_FILTERS, IDEA_TOPICS, _extract_response_text
 
 TREND_FEEDS = [
     {"name": "TechCrunch Startups", "url": "https://techcrunch.com/category/startups/feed/"},
@@ -316,13 +318,12 @@ _vertex_credentials = None
 _vertex_project = ""
 
 
+_TRANSIENT_HTTP_STATUSES = {429, 500, 502, 503, 504}
+
+
 def _generate_with_gemini(user_text: str) -> dict:
     if not GEMINI_API_KEY:
         raise RuntimeError("GEMINI_API_KEY sozlanmagan")
-    url = (
-        "https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{GEMINI_MODEL}:generateContent"
-    )
     payload = {
         "systemInstruction": {"parts": [{"text": SUGGESTION_SYSTEM_PROMPT}]},
         "contents": [{"role": "user", "parts": [{"text": user_text}]}],
@@ -332,16 +333,33 @@ def _generate_with_gemini(user_text: str) -> dict:
             "maxOutputTokens": 8192,
         },
     }
-    response = httpx.post(
-        url,
-        json=payload,
-        headers={"x-goog-api-key": GEMINI_API_KEY},
-        timeout=120,
-    )
-    if response.status_code != 200:
-        raise RuntimeError(f"Gemini API xatosi {response.status_code}: {response.text[:300]}")
-    data = response.json()
-    return json.loads(data["candidates"][0]["content"]["parts"][0]["text"])
+    models = list(dict.fromkeys([GEMINI_MODEL, *GEMINI_FALLBACK_MODELS]))
+    last_error = ""
+    for model in models:
+        url = (
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{model}:generateContent"
+        )
+        try:
+            response = httpx.post(
+                url,
+                json=payload,
+                headers={"x-goog-api-key": GEMINI_API_KEY},
+                timeout=60,
+            )
+        except (httpx.TimeoutException, httpx.RequestError) as error:
+            last_error = f"Gemini API ({model}) tarmoq/timeout xatosi: {error}"
+            print(f"   ⚠ {last_error}")
+            continue
+        if response.status_code == 200:
+            data = response.json()
+            return json.loads(_extract_response_text(data))
+        last_error = f"Gemini API ({model}) xatosi {response.status_code}: {response.text[:250]}"
+        print(f"   ⚠ {last_error}")
+        if response.status_code in (_TRANSIENT_HTTP_STATUSES | {404}):
+            continue
+        raise RuntimeError(f"Gemini API ({model}) xatosi {response.status_code}: {response.text[:300]}")
+    raise RuntimeError(last_error or "Gemini API barcha modellari ishlamadi")
 
 
 def _generate_with_vertex(user_text: str) -> dict:
@@ -374,16 +392,21 @@ def _generate_with_vertex(user_text: str) -> dict:
             "maxOutputTokens": 8192,
         },
     }
-    response = httpx.post(
-        url,
-        json=payload,
-        headers={"Authorization": f"Bearer {_vertex_credentials.token}"},
-        timeout=120,
-    )
+    response = None
+    for attempt in range(2):
+        response = httpx.post(
+            url,
+            json=payload,
+            headers={"Authorization": f"Bearer {_vertex_credentials.token}"},
+            timeout=120,
+        )
+        if response.status_code not in _TRANSIENT_HTTP_STATUSES or attempt == 1:
+            break
+        time.sleep(2)
     if response.status_code != 200:
         raise RuntimeError(f"Vertex AI xatosi {response.status_code}: {response.text[:300]}")
     data = response.json()
-    return json.loads(data["candidates"][0]["content"]["parts"][0]["text"])
+    return json.loads(_extract_response_text(data))
 
 
 def _generate_with_claude(user_text: str) -> dict:
@@ -426,7 +449,16 @@ def suggest_ideas(signals: list[dict], existing_titles: list[str]) -> list[dict]
     if AI_PROVIDER == "claude":
         result = _generate_with_claude(user_text)
     elif AI_PROVIDER == "vertex":
-        result = _generate_with_vertex(user_text)
+        try:
+            result = _generate_with_vertex(user_text)
+        except Exception as error:
+            if GEMINI_API_KEY:
+                print(
+                    f"   ⚠ Vertex AI ishlamadi ({error}); Gemini API zaxira yo'liga o'tilmoqda."
+                )
+                result = _generate_with_gemini(user_text)
+            else:
+                raise
     else:
         result = _generate_with_gemini(user_text)
     return list(result.get("goyalar") or [])[:RSS_IDEA_SUGGESTIONS_PER_BATCH]

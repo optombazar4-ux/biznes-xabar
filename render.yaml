@@ -14,8 +14,10 @@ services:
         sync: false          # Supabase pooler connection string
       - key: GEMINI_API_KEY
         sync: false
+      - key: GEMINI_MODEL
+        value: "gemini-3.8-flash"
       - key: AI_PROVIDER
-        value: "vertex"
+        value: "gemini"
       - key: GOOGLE_APPLICATION_CREDENTIALS
         value: "/etc/secrets/google-credentials.json"
       - key: GOOGLE_CLOUD_PROJECT

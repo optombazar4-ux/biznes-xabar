@@ -173,5 +173,104 @@ class FallbackIsNotAutoPublishedTests(unittest.TestCase):
         self.assertIsNotNone(article.published_at)
 
 
+class ExtractResponseTextTests(unittest.TestCase):
+    def test_skips_thought_parts_and_returns_actual_text(self):
+        payload = {
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [
+                            {"thought": True, "text": "ichki mulohaza"},
+                            {"text": '{"sarlavha": "Dars"}'},
+                        ]
+                    }
+                }
+            ]
+        }
+        self.assertEqual(
+            education._extract_response_text(payload),
+            '{"sarlavha": "Dars"}',
+        )
+
+
+class VertexFallbackTests(unittest.TestCase):
+    def test_vertex_failure_falls_back_to_gemini_when_api_key_set(self):
+        with (
+            patch.object(education, "AI_PROVIDER", "vertex"),
+            patch.object(education, "GEMINI_API_KEY", "test-key"),
+            patch.object(
+                education,
+                "_generate_with_vertex",
+                side_effect=RuntimeError("Vertex AI 403"),
+            ),
+            patch.object(
+                education,
+                "_generate_with_gemini",
+                return_value={"sarlavha": "Gemini natija"},
+            ) as gemini_mock,
+        ):
+            result = education._call_ai_provider("Mavzu")
+
+        gemini_mock.assert_called_once_with("Mavzu", None)
+        self.assertEqual(result, {"sarlavha": "Gemini natija"})
+
+    def test_vertex_failure_reraises_without_gemini_api_key(self):
+        with (
+            patch.object(education, "AI_PROVIDER", "vertex"),
+            patch.object(education, "GEMINI_API_KEY", ""),
+            patch.object(
+                education,
+                "_generate_with_vertex",
+                side_effect=RuntimeError("Vertex AI 403"),
+            ),
+        ):
+            with self.assertRaises(RuntimeError):
+                education._call_ai_provider("Mavzu")
+
+
+class GeminiModelFallbackTests(unittest.TestCase):
+    def test_falls_back_to_next_model_on_503(self):
+        class FakeResponse:
+            def __init__(self, status_code, payload, text=""):
+                self.status_code = status_code
+                self._payload = payload
+                self.text = text
+
+            def json(self):
+                return self._payload
+
+        calls = []
+
+        def fake_post(url, **kwargs):
+            calls.append(url)
+            if "gemini-3.8-flash" in url:
+                return FakeResponse(503, {}, "High demand")
+            return FakeResponse(
+                200,
+                {
+                    "candidates": [
+                        {"content": {"parts": [{"text": '{"sarlavha": "Zaxira model darsi"}'}]}}
+                    ]
+                },
+            )
+
+        with (
+            patch.object(education, "GEMINI_API_KEY", "test-key"),
+            patch.object(education, "GEMINI_MODEL", "gemini-3.8-flash"),
+            patch.object(
+                education,
+                "GEMINI_FALLBACK_MODELS",
+                ("gemini-3.7-flash", "gemini-3.1-flash-lite"),
+            ),
+            patch.object(education.httpx, "post", side_effect=fake_post),
+        ):
+            result = education._generate_with_gemini("Mavzu")
+
+        self.assertEqual(result, {"sarlavha": "Zaxira model darsi"})
+        self.assertEqual(len(calls), 2)
+        self.assertIn("gemini-3.8-flash", calls[0])
+        self.assertIn("gemini-3.7-flash", calls[1])
+
+
 if __name__ == "__main__":
     unittest.main()

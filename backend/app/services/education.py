@@ -18,6 +18,7 @@ from ..config import (
     ANTHROPIC_API_KEY,
     CLAUDE_MODEL,
     GEMINI_API_KEY,
+    GEMINI_FALLBACK_MODELS,
     GEMINI_MODEL,
     GOOGLE_CLOUD_LOCATION,
     GOOGLE_CLOUD_PROJECT,
@@ -430,13 +431,25 @@ def _user_prompt(topic: str) -> str:
     return f"Mavzu: {topic}"
 
 
+_TRANSIENT_HTTP_STATUSES = {429, 500, 502, 503, 504}
+
+
+def _gemini_model_candidates() -> list[str]:
+    return list(dict.fromkeys([GEMINI_MODEL, *GEMINI_FALLBACK_MODELS]))
+
+
+def _extract_response_text(data: dict) -> str:
+    """Gemini/Vertex javobidan thought bo'lmagan birinchi matn qismini ajratadi."""
+    parts = data["candidates"][0]["content"]["parts"]
+    for part in parts:
+        if not part.get("thought") and "text" in part:
+            return part["text"]
+    return parts[0]["text"]
+
+
 def _generate_with_gemini(topic: str, user_prompt: str | None = None) -> dict:
     if not GEMINI_API_KEY:
         return _generate_curated_fallback(topic)
-    url = (
-        "https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{GEMINI_MODEL}:generateContent"
-    )
     payload = {
         "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
         "contents": [{"role": "user", "parts": [{"text": user_prompt or _user_prompt(topic)}]}],
@@ -446,17 +459,33 @@ def _generate_with_gemini(topic: str, user_prompt: str | None = None) -> dict:
             "maxOutputTokens": 8192,
         },
     }
-    try:
-        response = httpx.post(
-            url, json=payload, headers={"x-goog-api-key": GEMINI_API_KEY}, timeout=120
+    for model in _gemini_model_candidates():
+        url = (
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{model}:generateContent"
         )
-        if response.status_code != 200:
-            return _generate_curated_fallback(topic)
-        data = response.json()
-        text = data["candidates"][0]["content"]["parts"][0]["text"]
-        return json.loads(text)
-    except Exception:
-        return _generate_curated_fallback(topic)
+        try:
+            response = httpx.post(
+                url, json=payload, headers={"x-goog-api-key": GEMINI_API_KEY}, timeout=60
+            )
+            if response.status_code == 200:
+                data = response.json()
+                text = _extract_response_text(data)
+                return json.loads(text)
+            print(
+                f"   ✗ Gemini API ({model}) xatosi {response.status_code}: "
+                f"{response.text[:200]}"
+            )
+            if response.status_code in (_TRANSIENT_HTTP_STATUSES | {404}):
+                continue
+            break
+        except (httpx.TimeoutException, httpx.RequestError) as error:
+            print(f"   ✗ Gemini API ({model}) tarmoq/timeout xatosi: {error}")
+            continue
+        except Exception as error:
+            print(f"   ✗ Gemini API ({model}) so'rov xatosi: {error}")
+            break
+    return _generate_curated_fallback(topic)
 
 
 def _generate_curated_fallback(topic: str) -> dict:
@@ -557,7 +586,7 @@ def _generate_with_vertex(topic: str, user_prompt: str | None = None) -> dict:
             f"Vertex AI xatosi {response.status_code}: {response.text[:300]}"
         )
     data = response.json()
-    text = data["candidates"][0]["content"]["parts"][0]["text"]
+    text = _extract_response_text(data)
     return json.loads(text)
 
 
@@ -697,7 +726,15 @@ def _call_ai_provider(topic: str, prompt: str | None = None) -> dict:
     if AI_PROVIDER == "claude":
         return _generate_with_claude(topic, prompt)
     if AI_PROVIDER == "vertex":
-        return _generate_with_vertex(topic, prompt)
+        try:
+            return _generate_with_vertex(topic, prompt)
+        except Exception as error:
+            if GEMINI_API_KEY:
+                print(
+                    f"   ⚠ Vertex AI ishlamadi ({error}); Gemini API zaxira yo'liga o'tilmoqda."
+                )
+                return _generate_with_gemini(topic, prompt)
+            raise
     return _generate_with_gemini(topic, prompt)
 
 

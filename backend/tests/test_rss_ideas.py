@@ -9,7 +9,13 @@ from sqlalchemy.orm import sessionmaker
 import app.pipeline as pipeline
 from app.database import Base
 from app.models import Article, IdeaProposal, IdeaProposalRun
-from app.services.education import IDEA_FILTERS, IDEA_TOPICS, IDEA_TOPIC_TAGS
+from app.services import rss_ideas
+from app.services.education import (
+    IDEA_FILTERS,
+    IDEA_TOPICS,
+    IDEA_TOPIC_TAGS,
+    LESSON_TOPICS,
+)
 from app.services.rss_ideas import (
     _canonical_url,
     _parse_feed,
@@ -224,6 +230,12 @@ class PipelineStageTests(unittest.TestCase):
                 original_url="internal://dars/ai-tayyorlagan-goya",
                 source_name="Biznes Darslari",
                 content="## G'oya qisqacha\nHaqiqiy AI matni",
+                quiz={
+                    "question": "Sinov savoli?",
+                    "options": ["Variant A", "Variant B"],
+                    "answer_index": 0,
+                    "explanation": "Qisqa izoh",
+                },
                 importance=4,
                 status="pending",
             )
@@ -269,8 +281,131 @@ class PipelineStageTests(unittest.TestCase):
             db.refresh(proposal)
             self.assertEqual(ai_article.status, "published")
             self.assertIsNotNone(ai_article.published_at)
+            self.assertIsInstance(ai_article.quiz, list)
+            self.assertEqual(len(ai_article.quiz), 1)
+            self.assertEqual(ai_article.quiz[0]["question"], "Sinov savoli?")
             self.assertEqual(proposal.status, "published")
             self.assertEqual(fallback_article.status, "pending")
+
+    def test_pipeline_raises_when_all_topics_covered_and_rss_fails(self):
+        with self.session_factory() as db:
+            for index, (_, topic) in enumerate(LESSON_TOPICS):
+                db.add(Article(
+                    title=topic,
+                    slug=f"covered-all-{index}",
+                    original_title=topic,
+                    original_url=f"internal://dars/covered-all-{index}",
+                    source_name="Biznes Darslari",
+                    status="published",
+                ))
+            db.commit()
+
+        with (
+            patch.object(pipeline, "engine", self.engine),
+            patch.object(pipeline, "SessionLocal", self.session_factory),
+            patch.object(pipeline, "RSS_IDEA_ENABLED", True),
+            patch.object(
+                pipeline,
+                "create_weekly_proposals",
+                side_effect=RuntimeError("Vertex AI billing required"),
+            ),
+        ):
+            with self.assertRaises(RuntimeError):
+                pipeline.run_pipeline()
+
+        with self.session_factory() as db:
+            latest_run = db.query(pipeline.PipelineRun).order_by(pipeline.PipelineRun.id.desc()).first()
+            self.assertIsNotNone(latest_run)
+            self.assertEqual(latest_run.status, "error")
+            self.assertIn("Vertex AI billing required", latest_run.error)
+
+
+class SuggestIdeasFallbackTests(unittest.TestCase):
+    def test_vertex_failure_falls_back_to_gemini_when_api_key_set(self):
+        signals = [
+            {
+                "id": 1,
+                "source": "Example",
+                "title": "Small business automation",
+                "summary": "Summary",
+                "published_at": None,
+            }
+        ]
+        with (
+            patch.object(rss_ideas, "AI_PROVIDER", "vertex"),
+            patch.object(rss_ideas, "GEMINI_API_KEY", "test-key"),
+            patch.object(
+                rss_ideas,
+                "_generate_with_vertex",
+                side_effect=RuntimeError("Vertex AI 403 billing"),
+            ),
+            patch.object(
+                rss_ideas,
+                "_generate_with_gemini",
+                return_value={"goyalar": [{"mavzu": "Zaxira g'oya"}]},
+            ) as gemini_mock,
+        ):
+            ideas = rss_ideas.suggest_ideas(signals, [])
+
+        gemini_mock.assert_called_once()
+        self.assertEqual(ideas, [{"mavzu": "Zaxira g'oya"}])
+
+    def test_vertex_failure_reraises_without_gemini_api_key(self):
+        with (
+            patch.object(rss_ideas, "AI_PROVIDER", "vertex"),
+            patch.object(rss_ideas, "GEMINI_API_KEY", ""),
+            patch.object(
+                rss_ideas,
+                "_generate_with_vertex",
+                side_effect=RuntimeError("Vertex AI 403 billing"),
+            ),
+        ):
+            with self.assertRaises(RuntimeError):
+                rss_ideas.suggest_ideas([], [])
+
+    def test_gemini_falls_back_to_next_model_on_503(self):
+        class FakeResponse:
+            def __init__(self, status_code, payload, text=""):
+                self.status_code = status_code
+                self._payload = payload
+                self.text = text
+
+            def json(self):
+                return self._payload
+
+        calls = []
+
+        def fake_post(url, **kwargs):
+            calls.append(url)
+            if "gemini-3.8-flash" in url:
+                return FakeResponse(503, {}, "High demand")
+            return FakeResponse(
+                200,
+                {
+                    "candidates": [
+                        {
+                            "content": {
+                                "parts": [
+                                    {"text": '{"goyalar": [{"mavzu": "Model fallback g\'oya"}]}'}
+                                ]
+                            }
+                        }
+                    ]
+                },
+            )
+
+        with (
+            patch.object(rss_ideas, "GEMINI_API_KEY", "test-key"),
+            patch.object(rss_ideas, "GEMINI_MODEL", "gemini-3.8-flash"),
+            patch.object(rss_ideas, "GEMINI_FALLBACK_MODELS", ("gemini-3.7-flash",)),
+            patch.object(rss_ideas.httpx, "post", side_effect=fake_post),
+        ):
+            result = rss_ideas._generate_with_gemini("test")
+
+        self.assertEqual(result, {"goyalar": [{"mavzu": "Model fallback g'oya"}]})
+        self.assertEqual(len(calls), 2)
+        self.assertIn("gemini-3.8-flash", calls[0])
+        self.assertIn("gemini-3.7-flash", calls[1])
 
 
 if __name__ == "__main__":
