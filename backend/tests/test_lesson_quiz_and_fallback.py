@@ -272,5 +272,21 @@ class GeminiModelFallbackTests(unittest.TestCase):
         self.assertIn("gemini-4-hydrogen", calls[1])
 
 
+class PolishUzbekTextTests(unittest.TestCase):
+    def test_fixes_glossary_and_common_typos_without_breaking_uzbekistan(self):
+        raw = (
+            "YaTT (Yagona Tadbirkorlik Subyekti) uchun G'ozallik va Transaktsion xizmatlar "
+            "bozorini taxlil qilish — Uzbek tadbirkorlari va Uzbekistan bozori uchun."
+        )
+        polished = education._polish_uzbek_text(raw)
+        self.assertIn("Yakka tartibdagi tadbirkor", polished)
+        self.assertNotIn("Yagona Tadbirkorlik Subyekti", polished)
+        self.assertIn("Go'zallik", polished)
+        self.assertIn("Tranzaksion", polished)
+        self.assertIn("tahlil", polished)
+        self.assertIn("O'zbek tadbirkorlari", polished)
+        self.assertIn("Uzbekistan bozori", polished)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -338,6 +338,23 @@ LESSON_TOPICS = [("biznes-goyalari", topic) for topic in IDEA_TOPICS] + [
     ("onlayn-biznes", "Marketpleyslarda tovarlarni to'g'ri joylashtirish va sotuvni oshirish"),
     ("amaliy-konikmalar", "Tadbirkorlikda hissiy intellekt (EQ) va stressni boshqarish"),
     ("amaliy-konikmalar", "Biznes sheriklar o'rtasida taqsimot va shartnoma tuzish"),
+
+    # --- 2026–2027-yilgi yangi amaliy biznes darslari (barcha bo'limlar bo'yicha) ---
+    ("biznesni-boshlash", "O'zini o'zi band qilgan shaxs sifatida ishlash: qoidalar, soliq va afzalliklar"),
+    ("biznesni-boshlash", "Kichik biznes uchun shartnoma va offertalarni to'g'ri tuzish: odatiy xatolar"),
+    ("moliya", "Kichik biznesda marja, ustama va zararsizlik nuqtasini (break-even) hisoblash"),
+    ("moliya", "Naqd va karta (Payme, Click, terminal) tushumlarini to'g'ri yuritish va soliq intizomi"),
+    ("moliya", "Xarid narxini pasaytirish va yetkazib beruvchilar bilan chegirma kelishish usullari"),
+    ("marketing-sotuv", "Telegram Ads va mahalliy kanallarda reklama berish: byudjetni behuda sarflamaslik qoidalari"),
+    ("marketing-sotuv", "AI qidiruv tizimlari (ChatGPT, Gemini) orqali mahalliy biznesga mijoz jalb qilish (GEO)"),
+    ("marketing-sotuv", "Instagram Reels va qisqa videolar orqali mahalliy xizmatlarni sotish formulasi"),
+    ("boshqaruv", "Sotuv menejerlari uchun KPI, reja va motivatsiya tizimini to'g'ri qurish"),
+    ("boshqaruv", "Kichik jamoada ish jarayonlarini standartlashtirish: SOP va chek-listlar tuzish"),
+    ("onlayn-biznes", "Uzum Market'da kartochka SEO, reyting va qaytarishlarni kamaytirish amaliyoti"),
+    ("onlayn-biznes", "Telegram bot va mini-app orqali avtomatik buyurtma qabul qilish tizimini qurish"),
+    ("onlayn-biznes", "Mahalliy biznes uchun Google Maps va Yandex Xaritalarda yuqori o'ringa chiqish"),
+    ("amaliy-konikmalar", "B2B sotuvlarda sovuq murojaat va samarali tijorat taklifi (KP) tayyorlash"),
+    ("amaliy-konikmalar", "Mijozlarning 'qimmat ekan' e'tiroziga professional javob berish texnikalari"),
 ]
 
 SYSTEM_PROMPT = """**Rol:** Sen tajribali o'zbek biznes-murabbiysan. O'zbekistonda biznes ochish va yuritish amaliyotini, mahalliy qonunchilik va bozor sharoitini yaxshi bilasan.
@@ -346,8 +363,9 @@ SYSTEM_PROMPT = """**Rol:** Sen tajribali o'zbek biznes-murabbiysan. O'zbekiston
 
 **Asosiy tamoyil — jahon tajribasi + O'zbekiston sharoiti:**
 - Darsni jahon miqyosida isbotlangan eng yaxshi amaliyot va tamoyillarga (best practices) asosla.
-- LEKIN uni DOIM O'zbekiston sharoitiga moslashtir: mahalliy ro'yxatdan o'tish (YaTT/MChJ, soliq.uz), O'zbekiston soliqlari, mahalliy to'lov tizimlari (Payme, Click, Uzum), marketpleyslar (Uzum Market, Wildberries), so'mdagi realistik raqamlar va O'zbekistonga xos misollar.
-- Umumiy nazariy gapdan qoch — mahalliy tadbirkor ertaga qo'llay oladigan aniq qadamlarni ber.
+- LEKIN uni DOIM O'zbekiston sharoitiga moslashtir: mahalliy ro'yxatdan o'tish (YaTT = Yakka tartibdagi tadbirkor, MChJ = Mas'uliyati cheklangan jamiyat, soliq.uz), O'zbekiston soliqlari, mahalliy to'lov va savdo tizimlari (Payme, Click, Uzum, Telegram, Instagram), marketpleyslar (Uzum Market, Wildberries), so'mdagi realistik hisob-kitoblar va O'zbekistonga xos misollar.
+- O'zbekistonda ishlamaydigan platformalarni (TikTok Shop, Stripe, PayPal) mahalliy yechim sifatida tavsiya qilma; asosiy mijoz kanali sifatida Telegram, Instagram va telefon/SMS amaliyotini ko'rsat.
+- Umumiy nazariy gapdan qoch — mahalliy tadbirkor ertaga qo'llay oladigan aniq qadamlarni, kamida 3 500 belgili batafsil matn va real so'm misollari bilan ber.
 
 **Qoidalar:**
 1. **Amaliylik:** Aniq qadamlar, misollar, raqamlar va tekshiruv ro'yxatlari (checklist) ber.
@@ -358,7 +376,7 @@ SYSTEM_PROMPT = """**Rol:** Sen tajribali o'zbek biznes-murabbiysan. O'zbekiston
 6. **Sarlavha:** "sarlavha" maydonida jalb qiluvchi, aniq o'zbekcha sarlavha ber.
 7. **Teglar:** "teglar" maydonida 3-6 ta mavzuga oid teg.
 9. **Test (Quiz):** "quiz" maydonida ushbu dars kontenti asosida foydalanuvchi bilimini sinovchi 3 ta interaktiv savol tayyorla. Har bir savolda: "question" (savol matni), "options" (4 ta variant), "answer_index" (0..3 oralig'ida to'g'ri javob indeksi) va "explanation" (javobning o'zbekcha qisqa tushuntirishi).
-10. **Til va Imlo:** DOIM lotin alifbosidagi ravon va xatosiz o'zbek tilida yoz. Xorijiy yoki baynalmilal so'zlarni oldingi o'zbekcha so'zga HECH QACHON qo'shib yozma (masalan, "uchunFranchayzer" emas — "uchun franchayzer"). Hech bir bo'lim yoki ro'yxat bandini yarim joyidan uzib qoldirma, har bir fikrni to'liq nuqta bilan yakunla.
+10. **Til, Atama va Imlo:** DOIM lotin alifbosidagi ravon va xatosiz o'zbek tilida yoz ("O'zbek", "tahlil", "Go'zallik", "tranzaksion" kabi to'g'ri imloni saqla; "YaTT" ni hech qachon "Yagona Tadbirkorlik Subyekti" deb yozma). Xorijiy yoki baynalmilal so'zlarni oldingi o'zbekcha so'zga HECH QACHON qo'shib yozma (masalan, "uchunFranchayzer" emas — "uchun franchayzer"). Hech bir bo'lim yoki ro'yxat bandini yarim joyidan uzib qoldirma, har bir fikrni to'liq nuqta bilan yakunla.
 11. **Format:** Javobni qat'iy JSON formatida qaytar."""
 
 LESSON_SCHEMA = {
@@ -652,9 +670,22 @@ def _polish_uzbek_text(value: str | None) -> str:
     text = str(value)
     # Kichik o'zbekcha so'z oxiriga katta harfli so'z yopishib qolishi (masalan: "uchunFranchayzer")
     text = re.sub(r"\b([a-zʻʼ']{2,})([A-Z][a-z]{3,})\b", _split_glued_camel, text)
-    # Tez-tez uchraydigan yopishish va imlo xatolarini tuzatish
+    # Tez-tez uchraydigan yopishish, atama va imlo xatolarini tuzatish
     text = re.sub(r"\bbepullanding\b", "bepul landing", text, flags=re.IGNORECASE)
     text = re.sub(r"\bEKMAS\b", "EMAS", text)
+    text = re.sub(
+        r"\bYagona\s+Tadbirkorlik\s+Subyekti\b",
+        "Yakka tartibdagi tadbirkor",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(r"\bTaxlil\b", "Tahlil", text)
+    text = re.sub(r"\btaxlil\b", "tahlil", text)
+    text = re.sub(r"\bG['ʻʼ]ozallik\b", "Go'zallik", text)
+    text = re.sub(r"\bg['ʻʼ]ozallik\b", "go'zallik", text)
+    text = re.sub(r"\bUzbek\b(?!istan)", "O'zbek", text)
+    text = re.sub(r"\bTransaktsion\b", "Tranzaksion", text)
+    text = re.sub(r"\btransaktsion\b", "tranzaksion", text)
     # Oxirida chala uzilib qolgan bo'sh ro'yxat bandlarini olib tashlash ("3. **" yoki "- **")
     text = re.sub(r"(?:\n+|\s+)(?:\d+\.|[-*])\s*\*{0,2}\s*$", "", text.strip())
     return text.strip()

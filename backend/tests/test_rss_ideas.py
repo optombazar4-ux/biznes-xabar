@@ -22,8 +22,7 @@ from app.services.rss_ideas import (
     _validate_suggestion,
     proposal_batch_is_due,
 )
-from app.utils import title_tokens
-from app.utils import utcnow_naive
+from app.utils import is_near_duplicate, title_tokens, utcnow_naive
 
 
 class CuratedCatalogTests(unittest.TestCase):
@@ -123,6 +122,34 @@ class SuggestionValidationTests(unittest.TestCase):
         )
         self.assertFalse(is_valid)
         self.assertTrue(any("o'xshash" in note for note in notes))
+
+    def test_unrealistic_uzbekistan_platforms_are_rejected(self):
+        for bad_title in (
+            "TikTok Shop orqali kiyim sotishni boshlash xizmati",
+            "Windows 11 telefon integratsiyasi bo'yicha konsalting",
+            "Stripe to'lov tizimini ulash bo'yicha xizmat",
+        ):
+            raw = {
+                "mavzu": bad_title,
+                "asos": "Talab mavjud.",
+                "filtrlar": ["onlayn", "xizmat"],
+                "budjet_min": 1_000_000,
+                "budjet_max": 3_000_000,
+                "xavflar": "Raqobat.",
+                "signal_idlar": [1],
+            }
+            _, notes, is_valid = _validate_suggestion(
+                raw,
+                seen_titles=[],
+                signals_by_id=self.signal,
+            )
+            self.assertFalse(is_valid, bad_title)
+            self.assertTrue(any("O'zbekiston bozoriga mos emas" in note for note in notes))
+
+    def test_recommerce_hyphen_variants_detect_near_duplicate(self):
+        existing = title_tokens("Brend kiyimlar bilan recommerce onlayn savdo")
+        candidate = title_tokens("Brend kiyimlar bilan Re-commerce onlayn do'koni")
+        self.assertTrue(is_near_duplicate(candidate, [existing]))
 
 
 class ProposalScheduleTests(unittest.TestCase):
@@ -318,6 +345,34 @@ class PipelineStageTests(unittest.TestCase):
             self.assertIsNotNone(latest_run)
             self.assertEqual(latest_run.status, "error")
             self.assertIn("Vertex AI billing required", latest_run.error)
+
+    def test_pending_unrealistic_article_is_rejected_not_published(self):
+        with self.session_factory() as db:
+            bad_article = Article(
+                title="TikTok Shop: Uzbek tadbirkorlari uchun yangi savdo",
+                slug="tiktok-shop-uzbek-savdo",
+                original_title="TikTok Shop",
+                original_url="internal://dars/tiktok-shop-uzbek-savdo",
+                source_name="Biznes Darslari",
+                content="## G'oya qisqacha\nMatn",
+                importance=4,
+                status="pending",
+            )
+            db.add(bad_article)
+            db.commit()
+
+            with (
+                patch.object(pipeline, "AUTO_PUBLISH", True),
+                patch.object(pipeline, "AUTO_PUBLISH_MIN_IMPORTANCE", 1),
+                patch.object(pipeline, "_send_to_telegram_if_enabled") as tg_mock,
+            ):
+                published_count = pipeline._publish_pending_articles(db)
+
+            self.assertEqual(published_count, 0)
+            tg_mock.assert_not_called()
+            db.refresh(bad_article)
+            self.assertEqual(bad_article.status, "rejected")
+            self.assertIsNone(bad_article.published_at)
 
 
 class SuggestIdeasFallbackTests(unittest.TestCase):

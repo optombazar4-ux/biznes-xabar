@@ -28,13 +28,19 @@ _TITLE_STOPWORDS = {
     "how", "why", "what", "when", "who", "new", "will", "can", "about",
     "after", "before", "more", "most", "top", "best", "uchun", "bilan",
     "qanday", "biznes", "xizmati", "sotish", "tayyorlash",
+    "ozbekistonda", "biznesi", "biznesini", "boshlash", "kerak",
+    "kichik", "xizmat", "goyasi",
 }
 
 
 def title_tokens(title: str) -> set[str]:
     """Sarlavhadagi ma'noli so'zlarni yaqin-dublikat tekshiruvi uchun ajratadi."""
+    normalized = (title or "").lower()
+    normalized = re.sub(r"\bre-commerce\b", "recommerce", normalized)
+    normalized = re.sub(r"\be-commerce\b", "ecommerce", normalized)
+    normalized = normalized.replace("'", "").replace("ʻ", "").replace("’", "")
     tokens = set()
-    for word in re.findall(r"[a-z0-9]+", (title or "").lower()):
+    for word in re.findall(r"[a-z0-9]+", normalized):
         if word in _TITLE_STOPWORDS:
             continue
         if word.isdigit():

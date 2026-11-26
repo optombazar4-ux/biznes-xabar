@@ -102,6 +102,34 @@ BLOCKED_IDEA_TERMS = {
     "litsenziyasiz tibbiy",
 }
 
+UNAVAILABLE_OR_LOW_VALUE_TERMS = {
+    "tiktok shop",
+    "stripe",
+    "shopify payments",
+    "venmo",
+    "zelle",
+    "cash app",
+    "paypal",
+    "amazon fba",
+    "doordash",
+    "instacart",
+    "uber eats",
+    "windows 11",
+    "windows 10",
+    "phone link",
+    "telefon integratsiyasi",
+    "transaktsion elektron",
+    "sendgrid",
+    "mailgun",
+}
+
+
+def find_unrealistic_terms(text: str) -> list[str]:
+    """O'zbekiston bozoriga mos kelmaydigan yoki amaliy qiymati past atamalarni topadi."""
+    lowered = (text or "").lower()
+    return sorted(term for term in UNAVAILABLE_OR_LOW_VALUE_TERMS if term in lowered)
+
+
 SUGGESTION_SYSTEM_PROMPT = """Sen O'zbekiston kichik biznes bozori bo'yicha
 tajribali mahsulot tadqiqotchisisan.
 
@@ -118,6 +146,13 @@ Muhim xavfsizlik va realizm qoidalari:
   Faqat O'zbekistondagi kichik va o'rta tadbirkor tayyor dasturlar, mahalliy
   xomashyo yoki xizmat ko'rsatish modeli bilan real boshlay oladigan amaliy
   g'oyalarni tanla.
+- O'zbekistonda rasman ishlamaydigan platformalarga (TikTok Shop, Stripe, PayPal,
+  Venmo, Amazon FBA, Shopify Payments, DoorDash) asoslangan g'oyalarni TAKLIF QILMA.
+  Mahalliy vositalarni ishlat: Telegram, Instagram, Uzum Market, Payme, Click,
+  OLX, Yandex va soliq.uz.
+- Bitta operatsion tizim funksiyasi (masalan, Windows 11 Phone Link) yoki G'arb
+  email vositalari (SendGrid, Mailgun) bo'yicha sun'iy konsalting taklif qilma —
+  O'zbekistonda tadbirkor yoki mijoz haqiqatan pul to'laydigan aniq muammoni hal qil.
 - Sarlavhada notanish xorijiy startap nomini ("Mosqitter kabi..." shaklida)
   ishlatma — O'zbekiston tadbirkoriga darhol tushunarli mahalliy xizmat yoki
   mahsulot nomini yoz.
@@ -125,7 +160,9 @@ Muhim xavfsizlik va realizm qoidalari:
   qalbaki mahsulot, litsenziyasiz tibbiy yoki xavfli moliyaviy xizmat taklif qilma.
 - Budjetni so'mda realistik bahola. G'oya avval kichik sinov bilan tekshirilishi
   mumkin bo'lsin.
-- Mavjud katalogdagi g'oyalarni takrorlama.
+- Mavjud katalogdagi g'oyalarni va bir xil sohani (masalan, qayta-qayta re-commerce
+  yoki bir xil AI konsalting) takrorlama; xizmat, ishlab chiqarish, B2B, savdo,
+  oziq-ovqat, logistika, qishloq xo'jaligi va ta'lim yo'nalishlarida xilma-xillik qil.
 - Har bir taklif uchun foydalanilgan signal IDlarini ko'rsat.
 - Faqat lotin alifbosidagi ravon va imlo xatosiz o'zbek tilida, qat'iy JSON formatida javob ber."""
 
@@ -484,6 +521,11 @@ def _validate_suggestion(
     blocked = sorted(term for term in BLOCKED_IDEA_TERMS if term in combined)
     if blocked:
         errors.append(f"xavfli yoki taqiqlangan yo'nalish: {', '.join(blocked)}")
+    unrealistic = find_unrealistic_terms(combined)
+    if unrealistic:
+        errors.append(
+            f"O'zbekiston bozoriga mos emas yoki amaliy qiymati past: {', '.join(unrealistic)}"
+        )
 
     filters = []
     filter_lookup = {item.casefold(): item for item in IDEA_FILTERS}

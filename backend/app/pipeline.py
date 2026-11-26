@@ -47,7 +47,7 @@ from .services.education import (
     _clean_quiz,
     _polish_uzbek_text,
 )
-from .services.rss_ideas import create_weekly_proposals
+from .services.rss_ideas import create_weekly_proposals, find_unrealistic_terms
 from .services.telegram import send_to_channel
 from .utils import slugify, utcnow_naive
 from .services.monitoring import sanitize_error
@@ -298,6 +298,10 @@ def _is_saved_fallback(article: Article) -> bool:
     return FALLBACK_CONTENT_MARKER in (article.content or "")
 
 
+def _is_low_quality_pending(article: Article) -> bool:
+    return bool(find_unrealistic_terms(f"{article.title or ''} {article.summary or ''}"))
+
+
 def _publish_pending_articles(db) -> int:
     """AUTO_PUBLISH o'chiq paytida yig'ilib qolgan tayyor AI darslarini chop etadi."""
     if not AUTO_PUBLISH:
@@ -314,6 +318,11 @@ def _publish_pending_articles(db) -> int:
     published_count = 0
     for article in pending_articles:
         if _is_saved_fallback(article):
+            continue
+        if _is_low_quality_pending(article):
+            article.status = "rejected"
+            db.commit()
+            print(f"   ⊘ Past qiymatli pending dars rad etildi: {article.title[:60]}")
             continue
         now = utcnow_naive()
         article.title = _polish_uzbek_text(article.title) or article.title
